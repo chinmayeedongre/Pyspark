@@ -1,0 +1,377 @@
+>>> x=10
+>>> y=20
+>>> x
+10
+>>> y
+20
+>>> x+y
+30
+--------------------------------------------------------------
+>>> # defining a list
+... 
+>>> x=[1,2,3,4,5]
+>>> x
+[1, 2, 3, 4, 5]
+>>> x[0]
+1
+>>> x[-1]
+5
+>>> x.append(6)
+>>> x
+[1, 2, 3, 4, 5, 6]
+>>> x.extend([7,8,9])
+>>> x
+[1, 2, 3, 4, 5, 6, 7, 8, 9]
+>>> x.insert(2,25)
+>>> x
+[1, 2, 25, 3, 4, 5, 6, 7, 8, 9]
+>>> x.remove(4)     #removes an element based on value
+>>> x
+[1, 2, 25, 3, 5, 6, 7, 8, 9]
+>>> x.pop(2)        #removes an element based on index
+25
+>>> x
+[1, 2, 3, 5, 6, 7, 8, 9]
+>>> y=[5,3,1,4,2]
+>>> y.sort()
+>>> y
+[1, 2, 3, 4, 5]
+---------------------------------------------------------------------------------------------
+2.Tuple(): Immutable---->changes modifications are not allowed
+           Tuple represented using----->()
+
+>>> x=(1,2,3,4,5)
+>>> x.append(6)
+#error--
+>>> x.remove(3)
+#error
+
+other way of defining tuple
+
+>>> x=1,2,3   #If no braces, by default it is tuple type 
+>>> x
+(1, 2, 3)
+>>> type(x)
+<type 'tuple'>
+>>> 
+>>> x=1
+>>> type(x)
+<type 'int'>
+>>> x=(1)    #if only one element , it is not a tuple
+>>> type(x)
+<type 'int'>
+>>> x=(1,)    #tuple, as it is expecting multiple values
+>>> type(x)
+<type 'tuple'>
+
+--------------------------------------------------------------------------------------------
+set : for performing mathimatical operations----->represened using {}--->diplicates not allowed
+      ->indexing not allowed in set
+
+>>> x={'p1','p2','p3','p4','p5','p6'}
+>>> y={'p1','p2','p3','p7','p8','p9'}
+>>> z=x.union(y)
+>>> z
+set(['p2', 'p3', 'p1', 'p6', 'p7', 'p4', 'p5', 'p8', 'p9'])
+>>> len(z)
+9
+>>> w=x.intersection(y)
+>>> w
+set(['p2', 'p3', 'p1'])
+>>> len(w)
+3
+>>> #I want those players who are not in y
+... 
+>>> x-y
+set(['p6', 'p4', 'p5'])
+>>> #I want those players of y  who are not in x
+... 
+>>> y-x
+set(['p8', 'p9', 'p7'])
+>>> 
+-----------------------------------------------------------------------------------------------
+operations on list
+
+>>> x=[3,1,4,2,5,7]
+>>> print(x)
+[3, 1, 4, 2, 5, 7]
+>>> type(x)
+<type 'list'>
+>>> len(x)
+6
+>>> sum(x)
+22
+>>> max(x)
+7
+>>> min(x)
+1
+>>> sorted(x)
+[1, 2, 3, 4, 5, 7]
+>>> sorted(x,reverse=True)
+[7, 5, 4, 3, 2, 1]
+
+These above operations can be applied on List,tuple,set
+
+----------------------------------------------------------------------------------------------
+Dictionary----->Collection of (k,v) pairs----->represented as {k:v}
+
+>>> x={"Name":"Ajay","Age":25,"sal":80000}
+>>> x["Name"]
+'Ajay'
+>>> x["sal"]
+80000
+>>> #adding a new (k,v) pair
+... 
+>>> x["city"]="Pune"
+>>> x
+{'city': 'Pune', 'Age': 25, 'Name': 'Ajay', 'sal': 80000}
+>>> #modifying the salary
+... 
+>>> x['sal']=85000
+>>> x
+{'city': 'Pune', 'Age': 25, 'Name': 'Ajay', 'sal': 85000}
+>>> #removing a (k,v) pair
+... 
+>>> x.pop('Age')
+25
+>>> x
+{'city': 'Pune', 'Name': 'Ajay', 'sal': 85000}
+>>> x.keys()
+['city', 'Name', 'sal']
+>>> x.values()
+['Pune', 'Ajay', 85000]
+
+>>> x.get('Name')
+'Ajay'
+
+-----------------------------------------------------------------------------------------------
+flow-controls:
+
+if-else:
+>>> x=10
+>>> if(x>0):
+...   print("Positive No")
+... else:
+...   print("Negative No")
+... 
+Positive No
+>>> 
+#ex:2
+>>> time=18.52
+>>> if(time<=12.00):
+...   print("Good Morning!!!")
+... elif(time<=16.00):
+...   print("Good Afternoon!!!")
+... elif(time<=20.00):
+...   print("Good Evening!!!")
+... else:
+...   print("GoodNight!!!")
+... 
+Good Evening!!!
+-----------------------------------------------------------------------------------------------
+while loop:
+
+initialization
+while(condition):
+    stmt1
+    stmt2
+    stmt3
+    stmt4
+    increment/decrement
+
+#ex: printing No's from 1 to 10.
+
+>>> x=1
+>>> while(x<=10):
+...   print(x)
+...   x=x+1
+... 
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+
+---------------------------------------------------------------------------------------------
+for loop: executes set of stmts for every element of collection object
+
+>>> x=[10,20,30,40,50]
+>>> for p in x:
+...   print(p)
+... 
+10
+20
+30
+40
+50
+
+
+>>> #To square each element of list
+... 
+>>> x=[1,2,3,4,5]
+>>> for p in x:
+...  print(p**2)
+... 
+1
+4
+9
+16
+25
+
+
+
+>>> #Range(n): for generating range of values
+... 
+>>> for p in range(10):
+...   print(p)
+... 
+0
+1
+2
+3
+4
+5
+6
+7
+8
+9
+>>> for p in range(10,20):
+...   print(p)
+... 
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+>>> for p in range(20,30,2):
+...   print(p)
+... 
+20
+22
+24
+26
+28
+>>> for p in range(40,30,-1):
+...   print(p)
+... 
+40
+39
+38
+37
+36
+35
+34
+33
+32
+31
+
+----------------------------------------------------------------------------------------------
+Functions: Block of stmts performing particular task
+
+They are not executed automatically, we need to call them
+
+Functions are defined by using a keyword def
+
+>>> def display():
+...   print("Hello....")
+...   print("Good Evening....")
+... 
+>>> display()
+Hello....
+Good Evening....
+
+
+#ex:3
+>>> def compute(x,y):
+...   z=x+y
+...   print(z)
+... 
+>>> compute(10,20)
+30
+
+
+#ex:4
+>>> #ex: Functions with return types
+... 
+>>> def show(x,y):
+...   z=x+y
+...   return z
+... 
+>>> c=show(10,20)
+>>> print(c)
+30
+>>> 
+-----------------------------------------------------------------------------------------------
+lambda functions: A Function without any name is called as lambda function
+
+syntax: 
+
+lambda arguments:expresion
+
+Assign this lambda function to a variable and the variable behaves like the functionname
+
+ex:
+
+lambda function to square a no
+
+>>> f1=lambda x:x*x
+>>> p=f1(10)
+>>> print(p)
+100
+
+>>> #ex:2
+... 
+>>> f2=lambda x,y:x*y
+>>> p=f2(10,20)
+>>> print(p)
+200
+
+----------------------------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 

@@ -1,0 +1,392 @@
+Submitting pySpark Application:
+-------------------------------
+for creating spark application,mainly we require driver
+
+driver ---->which controls and drives the entire program
+            -->It is a process(jvm)
+
+programming in Python ----->why again jvm required
+
+By default spark built using scala --->derived from java ---->both uses JVM
+
+so her programming is python ,but spark API's built using JVM processes
+
+By default spark built using scala
+
+----------------------------------------------------------------------------------------------
+when we launch a spark application---->2 types of processes will be created
+
+1)driver (only one driver process/one application)
+2)Executor(1 or more executors /one application)
+
+Spark Application runs on several nodes
+
+driver process will be created by SparkSession class of pyspark.sql module
+
+
+
+The cluster we are using is YARN cluster
+
+YARN--->distributed computing cluster---->comes along with hadoop
+        without hadoop------->there is no YARN
+
+in spark1 version--->to create driver ,we use SparkContext class
+
+in spark2 version--->to create a driver using SparkSession
+
+---------------------------------------------------------------------------------------------
+hadoop@ubuntu:~$ cat comment
+spark is simple
+spark is distributed
+spark is for processing
+spark is in-memory computing
+
+Program: wordcount.py
+
+from pyspark import SparkConf,SparkContext
+import sys
+
+if __name__=="__main__":
+   conf=SparkConf()
+   sc=SparkContext('local','wordcountApp',conf=conf)
+   r1=sc.textFile(sys.argv[1]) #i/p file path
+   r2=r1.flatMap(lambda x:x.split(' ')).map(lambda x:(x,1)).reduceByKey(lambda x,y:x+y)
+   r2.saveAsTextFile(sys.argv[2]) #o/p path
+   sc.stop()
+
+
+No submitting the spark Application
+
+syntax:
+$spark-submit configurationoptions  programpath  inputpath   outputpath
+              <-----optional----->
+
+hadoop@ubuntu:~$ spark-submit /home/hadoop/wordcount.py  /home/hadoop/comment  /home/hadoop/wordcountres
+
+hadoop@ubuntu:~$ ls wordcountres
+part-00000  _SUCCESS
+hadoop@ubuntu:~$ cat wordcountres/part-00000
+(u'in-memory', 1)
+(u'for', 1)
+(u'computing', 1)
+(u'simple', 1)
+(u'is', 4)
+(u'processing', 1)
+(u'distributed', 1)
+(u'spark', 4)
+
+
+Here we are submitting the application to the local-->as we mentioned as sc=SparkContext('local')
+
+Spark Application can run in local/cluster(YARN)
+
+local---->only one machine
+cluster-->multiple nodes
+
+sc=SparkContext('local'
+
+if yarn cluster remove 'local' and place 'yarn' i.e sc=SparkContext('yarn')  ---->in spark2
+                                                                   ('yarn-client')->in spark1
+
+---------------------------------------------------------------------------------------------
+
+Q)How to configure master --->It can be (local/cluster(YARN))
+
+in jupyter notebook
+
+
+from pyspark.sql import SparkSession
+#creating spark driver
+spark=SparkSession.builder.master("local").appName("DemoApp").getOrCreate()
+spark
+
+o/p:
+SparkSession - in-memory
+
+SparkContext
+
+Spark UI
+
+Version
+v3.1.3
+Master
+local[*]
+AppName
+DemoApp
+
+above we are mentioning as local
+If yarn cluster then say---->builder.master("yarn")
+so while creating spark driver---->specify master as (local/yarn)
+
+
+
+Now submit:
+while trying to run the application on yarn.
+      try to take i/p from hdfs and
+      try to write o/p to hdfs
+
+hadoop@ubuntu:~$ cat comment
+spark is simple
+spark is distributed
+spark is for processing
+spark is in-memory computing
+
+hadoop@ubuntu:~$ hdfs dfs -put comment /pysparklab
+
+if __name__=="__main__":
+   conf=SparkConf()
+   sc=SparkContext('yarn','wordcountApp',conf=conf) #here change local to yarn
+
+Now submitting:
+ spark-submit /home/hadoop/wordcount.py hdfs://localhost:9000/pysparklab/comment hdfs://localhost:9000/pysparklab/wordcountres3
+
+hadoop@ubuntu:~$ hdfs dfs -ls /pysparklab/wordcountres3
+
+------------------------------------------------------------------------------------------------
+
+
+
+----------------------------------------------------------------------------------------------
+Type the following in jupyter notebook
+import findspark
+findspark.init()
+findspark.find()
+
+from pyspark.sql import SparkSession
+#creating spark driver
+spark=SparkSession.builder.master("local").appName("DemoApp1").getOrCreate()
+data=[("Miller",10000),("Blake",20000)]
+columns=["EmpName","Salary"]
+df=spark.createDataFrame(data,columns)
+df.show()
+
+o/p:
++-------+------+
+|EmpName|Salary|
++-------+------+
+| Miller| 10000|
+|  Blake| 20000|
++-------+------+
+
+----------------------------------------------------------------------------------------------
+
+here in the above wordcount application ,we didnt specify about driver and executors ,
+it takes  default values and executes
+what are the default values ---->how to see
+
+$spark-submit  --help
+
+It displays the various values
+
+--executor-memory MEM ----------->Default value -1GB
+                                  Default memory allocated to executor is 1GB
+
+what is the default memory allocated to driver
+
+--driver-memmory MEM ------------>Driver 1024m --->1GB
+
+the default cores  allocated are:
+
+spark standalone 
+--executor-cores NUM --------->Default :1
+
+YARN
+--driver-cores NUM ----------->Default :1
+
+In YARN cluster----->default values of executor and driver memory is 1GB/default cores is 1
+
+---------------------------------------------------------------------------------------------
+ex:  App1 ---------------->utilizing
+                           1GB 1core    1GB 1core     1GB 1 core
+                           <--sys1-->   <--sys2-->    <--sys3--->
+
+but each system has 8GB memory and 4 cores
+means 7GB memory free and 3 cores free ,which can be used for other applications
+
+
+ex:
+    App2 --------------->utilizing
+                         2GB 2core    2GB 2core     2GB 2 core
+                           <--sys1-->   <--sys2-->    <--sys3--->
+
+                         still 5GB and 1 core is available for other Application
+                         now i can allocate 5GB and 1c to App3
+
+i.e we can distribute the resources(memory & cores)
+
+In-order to allow multiple Apps to run on a cluster
+The Application must be submitted to FAIR Scheduler
+
+Spark supports 2 schedulers-------->FIFO/FAIR
+
+when we submit spark application in FIFO mode
+it wont allow 2nd application to be submitted untill 1st application is executed.
+
+means here only one application can run at a time
+
+but to run multiple applications---->then go fe FAIR mode
+
+-----------------------------------------------------------------------------------------------
+Configuring Driver and Executor memory
+
+$spark-submit configurationoptions programpath i/ppath o/ppath
+
+here  configuration options  is optional and here we can specify Executor and driver memory
+
+
+I)
+$spark-submit --executor-cores 2 --executor-memory 2G /home/hadoop/file.py hdfs://localhost:9000/dirname/filename
+               hdfs://localhost:9000/dirname/outputdir
+                                              in this outputdir---->we get a part-00000
+
+II)submitting the application to the fair scheduler
+$spark-submit --executor-cores 2 --executor-memory 2G --conf "spark.scheduler.mode"="FAIR"
+/home/hadoop/file.py  hdfs://localhost:9000/dirname/filename hdfs://localhost:9000/dirname/outputdir
+
+
+III) Driver memory and Driver cores
+$spark-submit --executor-cores 2 --executor-memory 2G --conf "spark.scheduler.mode"="FAIR"
+--driver-cores 2 --driver-memory 2G  programpath  i/pfilepath  o/pfilepath
+
+
+driver-coreses 2 --->these many cores not available for my system--->it gives error
+
+
+we can add one more property
+--deploy-mode DEPLOY_MODE
+
+whether to launch the driver program locally ("client") or on the worker machines insides the 
+cluster
+
+-Executors always be launched in worker node
+
+job isto process the data
+data will be within the worker ndes
+
+
+Q) Driver can be launched in worker /out of worker
+
+a)If driver has to be launched in a worker node then deploy the application in cluster mode only
+
+b)If driver has to be launched out of worker nodes then deploy rhe application in client mode
+
+when we submit the spark applicaton from the master node, then that master node becomes the client
+
+
+client deploy mode:
+the node from which we submit the spark application to the cluster. If the driver is launched
+in that node, then that is called as client deploy mode
+
+Edge node (or) Gateway node
+
+Gateway node---->gateway b/w the networks
+
+A Node will be used between the cluster and the outside world .This node is called as Edge node
+
+Instead of giving access to the entire cluster directly, an intermediate node
+will be used , that will act as an interface b/w the cluster and outside world
+
+-we can access the cluster through the edge node only ,we cannot access the cluster directly
+in production
+
+whatever we do,we should do through that edge node only
+
+we submit applications through the edge node
+
+
+If we want to see what is happenning to the application within the cluster
+who will maintain the entire information of the application----->Driver
+
+executor--->only for running the app
+
+If we want to run driver on edge node----->deploy in client mode
+
+If we want to run driver on one of the worker node--->deploy in cluster mode
+
+If you wont specify any mode--->by default it is client mode
+
+client mode----->for development and Testing
+
+cluster mode --->for production
+
+------------------------------------------------------------------------------------------
+
+submitting spark application to YARN
+
+YARN----->MAster process is --------->Resource manager
+          slave process  ------------>Node manager
+
+Submitting spark application to YARN means ---->we are submitting  spark application to
+Resource MAnager
+
+HDFS -------->Master process ------>NameNode
+               Slave process ------>DataNode
+
+
+To communicate with HDFS(read/write) ,we need to interact with master process--->NAmeNode
+
+we doesnt have direct interaction with slave processes which performs processing
+
+ex: In a company ,got a new project ,then there wont be any direct interaction with
+    the developers, where they execute and develop the code.
+    Instead Project manager,teamleader etc will be interacted
+
+-First data goes to them(project manager) and then data gets distributed to developers
+
+----------------------------------------------------------------------------------------------
+$nano App1.py
+
+from pysaprk.sql import SparkSession
+import sys
+
+if __name__=="__main__":
+    sparkdriver=SparkSession.builder.getOrCreate()
+    df1=sparkdriver.read.format('csv').load(sys.argv[1])
+    df1.write.saveAsTable(sys.argv[2])
+    sparkdriver.stop()
+
+here we dint pass the appname &master--->i.e i will pass while submitting-->i.e configuration options
+
+$spark-submit --master local --executor-memory 2G --executor-cores 2 --deploy-mode client
+ /home/hadoop/App1.py   hdfs://localhost:9000/pysparklab/sample1.csv  hdfs://localhost:9000/pysparklab/sample
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

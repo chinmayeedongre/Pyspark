@@ -1,0 +1,312 @@
+Reading JSON and writing into JSON
+
+hadoop@ubuntu:~$ hdfs dfs -mkdir /pyspakklab1
+hadoop@ubuntu:~$ hdfs dfs -put json1 /pysparkklab1
+hadoop@ubuntu:~$ hdfs dfs -cat /pysparklab1/json1
+
+hadoop@ubuntu:~$ hdfs dfs -put json1 /pyspakklab1
+hadoop@ubuntu:~$ hdfs dfs -cat /pyspakklab1/json1
+{"name":"Ajay","age":30,"sex":"m"}
+{"name":"Miller","age":25,"sex":"m"}
+{"name":"Latha","age":30,"sex":"f"}
+{"name":"Sony","age":22,"sex":"f","city":"hyd"}
+{"name":"John","age":33,"sex":"m","city":"pune"}
+
+
+p=spark.read.json("hdfs://localhost:9000/pyspakklab1/json1")  //here p is a dataframe
+>>> p.show()
++---+----+------+---+
+|age|city|  name|sex|
++---+----+------+---+
+| 30|null|  Ajay|  m|
+| 25|null|Miller|  m|
+| 30|null| Latha|  f|
+| 22| hyd|  Sony|  f|
+| 33|pune|  John|  m|
++---+----+------+---+
+
+>>> p.registerTempTable("details")
+
+>>> q1=sqlContext.sql("select * from details")  //here q1 ia also a dataframe
+>>> q1.show()
++---+----+------+---+
+|age|city|  name|sex|
++---+----+------+---+
+| 30|null|  Ajay|  m|
+| 25|null|Miller|  m|
+| 30|null| Latha|  f|
+| 22| hyd|  Sony|  f|
+| 33|pune|  John|  m|
++---+----+------+---+
+
+Task : Find the avg age values of females and males from the above data
+
+>>> q2=sqlContext.sql("select sex,avg(age) from details group by sex").show()
+
++---+------------------+
+|sex|          avg(age)|
++---+------------------+
+|  m|29.333333333333332|
+|  f|              26.0|
++---+------------------+
+
+#----------------------------------------------------------------------------------------------
+ex:2 Nested json
+
+hadoop@ubuntu:~$ cat json2
+{"name":"Ajay","age":30,"wife":{"name":"Latha","age":24},"city":"pune"}
+{"name":"Ravi","age":35,"wife":{"name":"Anitha","age":28},"city":"hyd"}
+{"name":"James","age":30,"wife":{"name":"Sony","age":27},"city":"Mumbai"}
+hadoop@ubuntu:~$ hdfs dfs -put json2 /pyspakklab1
+hadoop@ubuntu:~$ hdfs dfs -cat /pyspakklab1/json2
+{"name":"Ajay","age":30,"wife":{"name":"Latha","age":24},"city":"pune"}
+{"name":"Ravi","age":35,"wife":{"name":"Anitha","age":28},"city":"hyd"}
+{"name":"James","age":30,"wife":{"name":"Sony","age":27},"city":"Mumbai"}
+
+>>> p=spark.read.json("hdfs://localhost:9000/pyspakklab1/json2")
+>>> p.show()
++---+------+-----+------------+
+|age|  city| name|        wife|
++---+------+-----+------------+
+| 30|  pune| Ajay| [24, Latha]|
+| 35|   hyd| Ravi|[28, Anitha]|
+| 30|Mumbai|James|  [27, Sony]|
++---+------+-----+------------+
+
+>>> p.registerTempTable("tab1")
+>>> q=sqlContext.sql("select * from tab1")
+>>> q.show()
++---+------+-----+------------+
+|age|  city| name|        wife|
++---+------+-----+------------+
+| 30|  pune| Ajay| [24, Latha]|
+| 35|   hyd| Ravi|[28, Anitha]|
+| 30|Mumbai|James|  [27, Sony]|
++---+------+-----+------------+
+
+>>> q2=sqlContext.sql("select name as hname,wife.name as wname,age as hage,wife.age as wage,city from tab1").show()
++-----+------+----+----+------+
+|hname| wname|hage|wage|  city|
++-----+------+----+----+------+
+| Ajay| Latha|  30|  24|  pune|
+| Ravi|Anitha|  35|  28|   hyd|
+|James|  Sony|  30|  27|Mumbai|
++-----+------+----+----+------+
+
+----------------------------------------------------------------------------------------------
+II-way :other way of loading
+
+>>> df=spark.read.format('org.apache.spark.sql.json').load("hdfs://localhost:9000/pyspakklab1/json1")
+>>> df.show()
++---+----+------+---+
+|age|city|  name|sex|
++---+----+------+---+
+| 30|null|  Ajay|  m|
+| 25|null|Miller|  m|
+| 30|null| Latha|  f|
+| 22| hyd|  Sony|  f|
+| 33|pune|  John|  m|
++---+----+------+---+
+
+-----------------------------------------------------------------------------------------------
+Reading multipleline jsonfile:
+
+hadoop@ubuntu:~$ cat json3
+[{
+  "Player": "Rohith",
+  "matches" : 204, 
+  "TotalRuns":7570,
+  "HSscore":220
+ },
+ 
+{
+  "Player": "kohli",
+  "matches" : 320, 
+  "TotalRuns":12890,
+  "HSscore":310
+ },
+ 
+{
+  "Player": "Dhoni",
+  "matches" : 370, 
+  "TotalRuns":9820,
+  "HSscore":170
+ }]
+hadoop@ubuntu:~$ hdfs dfs -put json3 /pyspakklab1
+hadoop@ubuntu:~$ hdfs dfs -cat /pyspakklab1/json3
+
+>>> df=spark.read.option("multiline","true").json("hdfs://localhost:9000/pyspakklab1/json3")
+>>> df.show()
++-------+------+---------+-------+
+|HSscore|Player|TotalRuns|matches|
++-------+------+---------+-------+
+|    220|Rohith|     7570|    204|
+|    310| kohli|    12890|    320|
+|    170| Dhoni|     9820|    370|
++-------+------+---------+-------+
+
+#---------------------------------------------------------------------------------------------
+Reading multiple json files at a time
+syntax:
+df=spark.read.json(['jsonfile1path','jsonfile2path'])
+
+>>> df2=spark.read.json(["hdfs://localhost:9000/pyspakklab1/json1","hdfs://localhost:9000/pyspakklab1/json1"])
+>>> df2.show()
++---+----+------+---+
+|age|city|  name|sex|
++---+----+------+---+
+| 30|null|  Ajay|  m|
+| 25|null|Miller|  m|
+| 30|null| Latha|  f|
+| 22| hyd|  Sony|  f|
+| 33|pune|  John|  m|
+| 30|null|  Ajay|  m|
+| 25|null|Miller|  m|
+| 30|null| Latha|  f|
+| 22| hyd|  Sony|  f|
+| 33|pune|  John|  m|
++---+----+------+---+
+
+----------------------------------------------------------------------------------------------
+ex: if the schema of 2 json files are different
+
+>>> df2=spark.read.json(["hdfs://localhost:9000/pyspakklab1/json1","hdfs://localhost:9000/pyspakklab1/json2"])
+>>> df2.show()
++---+------+------+----+------------+
+|age|  city|  name| sex|        wife|
++---+------+------+----+------------+
+| 30|  pune|  Ajay|null| [24, Latha]|
+| 35|   hyd|  Ravi|null|[28, Anitha]|
+| 30|Mumbai| James|null|  [27, Sony]|
+| 30|  null|  Ajay|   m|        null|
+| 25|  null|Miller|   m|        null|
+| 30|  null| Latha|   f|        null|
+| 22|   hyd|  Sony|   f|        null|
+| 33|  pune|  John|   m|        null|
++---+------+------+----+------------+
+
+
+-----------------------------------------------------------------------------------------------
+Reading all json files from a directory---->by passing the directory path
+
+hadoop@ubuntu:~$ hdfs dfs -mkdir /pysparklab
+hadoop@ubuntu:~$ hdfs dfs -put json1 json2 /pysparklab
+
+>>> df3=spark.read.json("hdfs://localhost:9000/pysparklab")
+>>> df3.show()
++---+------+------+----+------------+
+|age|  city|  name| sex|        wife|
++---+------+------+----+------------+
+| 30|  pune|  Ajay|null| [24, Latha]|
+| 35|   hyd|  Ravi|null|[28, Anitha]|
+| 30|Mumbai| James|null|  [27, Sony]|
+| 30|  null|  Ajay|   m|        null|
+| 25|  null|Miller|   m|        null|
+| 30|  null| Latha|   f|        null|
+| 22|   hyd|  Sony|   f|        null|
+| 33|  pune|  John|   m|        null|
++---+------+------+----+------------+
+
+-----------------------------------------------------------------------------------------------
+Reading files with user-specified custom schema
+
+Pyspark sql provides StructType and StructField classes to specify the structure to the dataframe
+
+>>> from pyspark.sql.types import *
+>>> schema=StructType([StructField("name",StringType(),True),StructField("age",IntegerType(),True),StructField("sex",StringType(),True),StructField("city",StringType(),True)])
+>>> df=spark.read.schema(schema).json("hdfs://localhost:9000/pysparklab/json1")
+
+>>> df.printSchema()
+root
+ |-- name: string (nullable = true)
+ |-- age: integer (nullable = true)
+ |-- sex: string (nullable = true)
+ |-- city: string (nullable = true)
+
+>>> df.show()
++------+---+---+----+
+|  name|age|sex|city|
++------+---+---+----+
+|  Ajay| 30|  m|null|
+|Miller| 25|  m|null|
+| Latha| 30|  f|null|
+|  Sony| 22|  f| hyd|
+|  John| 33|  m|pune|
++------+---+---+----+
+
+------------------------------------------------------------------------------------
+writing a Dataframe to a JSON file
+
+>>> df.write.json("hdfs://localhost:9000/pysparklab/sample1")
+
+here sample1 is a directory and within that a .json file is created with a default name
+
+
+----------------------------------------------------------------------------------------------
+pyspark saving modes
+
+-we have a method called mode() to specify the save mode
+1)overwrite--->if file already exists.it overwrites
+2)append ---->for adding data to the existing file
+3)ignore ---->ignores write operation when the file already exists
+
+ex:
+>>> df.write.mode("overwrite").json("hdfs://localhost:9000/pysparklab/sample1.json")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

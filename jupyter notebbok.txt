@@ -1,0 +1,38 @@
+working with jupyter notebbook:
+-----------------------------
+
+Step 1: Install Java------->conda install openjdk
+
+Step 2: install pyspark------>conda install pyspark
+
+step 3: configure spark
+        i)download spark---->goto spark.apache.org--->select appropriate spark version
+                                                      i,e the tar file--->extract it
+        ii)set Environment variables-->
+                          goto uservariables ---->variablename--->SPARK_HOME
+                                                  variablevalue-->C:\spark\spark-3.1.3-bin-hadoop3.2
+
+                                                  path:C:\spark\spark-3.1.3-bin-hadoop3.2\bin
+
+
+step 3: In order to run pyspark in jupyter notebook first, you need to find Pyspark install
+        we use findspark package, This is a third-party package we need to install it
+
+        conda install -c conda-forge findspark 
+
+step 4: starting--->pyspark
+        
+
+
+
+
+
+when we launch a spark application--->2 types of processes will be created
+
+1)driver---->only one driver process/one Application
+2)Executor-->One or more Executors/one application
+
+driver process will be created by Spark Session class of pyspark.sql module
+
+
+

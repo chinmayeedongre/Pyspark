@@ -1,0 +1,128 @@
+Types of RDDs
+1.InputRDD
+2.MApped RDD
+3.FlatMapped RDD
+4.Filtered RDD
+
+1.Input RDD :Created by using a file
+
+>>> r1=sc.textFile("hdfs://localhost:9000/sparklab/emp")
+>>> r1.collect()
+o/p"u'101,miller,10000,m,11', u'102,Blake,20000,f,12', u'103,sony,30000,m,12', u'104,sita,40000,f,13', u'105,John,50000,m,11']
+>>> 
+#----------------------------------------------------------------------------------------------
+2.MApped RDD:
+#Extract only name and sal
+
+>>> r1=sc.textFile("hdfs://localhost:9000/sparklab/emp")
+>>> r1.collect()
+[u'101,miller,10000,m,11', u'102,Blake,20000,f,12', u'103,sony,30000,m,12', u'104,sita,40000,f,13', u'105,John,50000,m,11']
+>>> r2=r1.map(lambda x:x.split(','))
+>>> r2.collect()
+[[u'101', u'miller', u'10000', u'm', u'11'], [u'102', u'Blake', u'20000', u'f', u'12'], [u'103', u'sony', u'30000', u'm', u'12'], [u'104', u'sita', u'40000', u'f', u'13'], [u'105', u'John', u'50000', u'm', u'11']]
+>>> r3=r2.map(lambda x:(x[1],int(x[2])));
+>>> r3.collect()
+[(u'miller', 10000), (u'Blake', 20000), (u'sony', 30000), (u'sita', 40000), (u'John', 50000)]
+>>> 
+
+Here r1-------------->Input RDD
+     r2,r3-------------->Mapped RDD
+
+-----------------------------------------------------------------------------------------------
+Task :I want those employees whose sal>20000
+
+>>> r1=sc.textFile("hdfs://localhost:9000/sparklab/emp")
+>>> r1.collect()
+[u'101,miller,10000,m,11', u'102,Blake,20000,f,12', u'103,sony,30000,m,12', u'104,sita,40000,f,13', u'105,John,50000,m,11']
+>>> r2=r1.map(lambda x:x.split(","))
+>>> r2.collect()
+[[u'101', u'miller', u'10000', u'm', u'11'], [u'102', u'Blake', u'20000', u'f', u'12'], [u'103', u'sony', u'30000', u'm', u'12'], [u'104', u'sita', u'40000', u'f', u'13'], [u'105', u'John', u'50000', u'm', u'11']]
+>>> r3=r2.map(lambda x:(x[1],int(x[2])))
+>>> r3.collect()
+[(u'miller', 10000), (u'Blake', 20000), (u'sony', 30000), (u'sita', 40000), (u'John', 50000)]
+>>> r4=r3.filter(lambda x:x[1]>20000)
+>>> r4.collect()
+
+>>> r4=r3.filter(lambda x:x[1]>20000)
+>>> r4.collect()
+[(u'sony', 30000), (u'sita', 40000), (u'John', 50000)]
+
+r1------>inputRDD
+r2------>mappedRDD
+r3------>mappedRDD
+r4------>filtereed RDD
+
+----------------------------------------------------------------------------------------------
+ex:2 I want only male emp records
+
+>>> r1=sc.textFile("hdfs://localhost:9000/sparklab/emp")
+>>> r1.collect()
+[u'101,miller,10000,m,11', u'102,Blake,20000,f,12', u'103,sony,30000,m,12', u'104,sita,40000,f,13', u'105,John,50000,m,11']
+>>> r2=r1.map(lambda x:x.split(","))
+>>> r2.collect()
+[[u'101', u'miller', u'10000', u'm', u'11'], [u'102', u'Blake', u'20000', u'f', u'12'], [u'103', u'sony', u'30000', u'm', u'12'], [u'104', u'sita', u'40000', u'f', u'13'], [u'105', u'John', u'50000', u'm', u'11']]
+>>> r3=r2.filter(lambda x:x[3]=='m')
+>>> r3.collect()
+[[u'101', u'miller', u'10000', u'm', u'11'], [u'103', u'sony', u'30000', u'm', u'12'], [u'105', u'John', u'50000', u'm', u'11']]
+
+-----------------------------------------------------------------------------------------------
+ex:3 Getting records of a particular department(11)
+
+>>> r4=r2.filter(lambda x:x[4]=='11')
+>>> r4.collect()
+[[u'101', u'miller', u'10000', u'm', u'11'], [u'105', u'John', u'50000', u'm', u'11']]
+>>> 
+
+----------------------------------------------------------------------------------------------
+#To count the no of occurences of each word within a file(word count)
+
+>>> lines=["Spark is simple","Spark is for processing","spark is distributed"]
+>>> print(lines)
+['Spark is simple', 'Spark is for processing', 'spark is distributed']
+>>> lines1=sc.parallelize(lines)
+>>> words=lines1.map(lambda x:x.split(" "))
+>>> words.collect()
+[['Spark', 'is', 'simple'], ['Spark', 'is', 'for', 'processing'], ['spark', 'is', 'distributed']]
+>>> words1=words.flatMap(lambda x:x)
+>>> words1.collect()
+['Spark', 'is', 'simple', 'Spark', 'is', 'for', 'processing', 'spark', 'is', 'distributed']
+>>> //reduceByKey can be applied only on (k,v) pair
+  File "<stdin>", line 1
+    //reduceByKey can be applied only on (k,v) pair
+     ^
+SyntaxError: invalid syntax
+>>> #reduceByKey can be applied only on (k,v) pair
+... 
+>>> #add 1 to each word to form a key,value pair
+... 
+>>> pair=words1.map(lambda word:(word,1))
+>>> pair.collect()
+[('Spark', 1), ('is', 1), ('simple', 1), ('Spark', 1), ('is', 1), ('for', 1), ('processing', 1), ('spark', 1), ('is', 1), ('distributed', 1)]
+>>> res=pair.reduceByKey(lambda x,y:x+y)
+>>> res.collect()
+[('for', 1), ('simple', 1), ('is', 3), ('processing', 1), ('distributed', 1), ('Spark', 2), ('spark', 1)]
+>>> 
+
+------------------------------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

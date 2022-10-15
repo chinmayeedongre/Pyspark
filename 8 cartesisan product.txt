@@ -1,0 +1,62 @@
+cross joins:
+Cartesian product:means each element of leftside RDD will join with each element of rightsideRDD
+
+>>> dno=sc.parallelize([11,12,13])
+>>> sex=sc.parallelize(["m","f"])
+>>> cp=dno.cartesian(sex)
+>>> cp.collect()
+[(11, 'm'), (11, 'f'), (12, 'm'), (12, 'f'), (13, 'm'), (13, 'f')]
+
+Joins:
+
+#select city,sum(Sal) from emp e join dept d on (e.dno=d.dno) group by city
+
+hadoop@ubuntu:~$ cat emps1
+101,aaa,1000,m,11
+102,bbb,2000,f,12
+103,ccc,3000,m,12
+104,ddd,4000,f,13
+105,eee,5000,m,11
+106,fff,6000,f,14
+107,ggg,7000,m,15
+108,hhh,8000,f,16hadoop@ubuntu:~$ cat dept1
+11,mrkt,hyd
+12,HR,delhi
+13,fin,pune
+17,HR,hyd
+18,fin,pune
+19,mrkt,delhi
+
+>>> emp=sc.textFile("hdfs://localhost:9000/sparklab/emps1")
+>>> dept=sc.textFile("hdfs://localhost:9000/sparklab/dept1")
+>>> emprecs=emp.map(lambda x:x.split(","))
+>>> deptrecs=dept.map(lambda x:x.split(","))
+>>> emprecs.collect()
+[[u'101', u'aaa', u'1000', u'm', u'11'], [u'102', u'bbb', u'2000', u'f', u'12'], [u'103', u'ccc', u'3000', u'm', u'12'], [u'104', u'ddd', u'4000', u'f', u'13'], [u'105', u'eee', u'5000', u'm', u'11'], [u'106', u'fff', u'6000', u'f', u'14'], [u'107', u'ggg', u'7000', u'm', u'15'], [u'108', u'hhh', u'8000', u'f', u'16']]
+>>> deptrecs.collect()
+[[u'11', u'mrkt', u'hyd'], [u'12', u'HR', u'delhi'], [u'13', u'fin', u'pune'], [u'17', u'HR', u'hyd'], [u'18', u'fin', u'pune'], [u'19', u'mrkt', u'delhi']]
+>>> dnosalpait=emprecs.map(lambda x:(int(x[4]),int(x[2])))
+>>> dnosalpair.collect()
+[(11, 10000), (12, 20000), (12, 30000), (13, 40000), (11, 50000)]
+>>> dnosalpair=emprecs.map(lambda x:(int(x[4]),int(x[2])))
+>>> dnosalpair.collect()
+[(11, 1000), (12, 2000), (12, 3000), (13, 4000), (11, 5000), (14, 6000), (15, 7000), (16, 8000)]
+>>> dnocitypair=deptrecs.map(lambda x:(int(x[0]),x[2]))
+>>> dnocitypair.collect()
+[(11, u'hyd'), (12, u'delhi'), (13, u'pune'), (17, u'hyd'), (18, u'pune'), (19, u'delhi')]
+>>> #now pair RDDS,now data is ready for join
+... 
+>>> ij=dnosalpair.join(dnocitypair)
+>>> ij.collect()
+[(12, (2000, u'delhi')), (12, (3000, u'delhi')), (11, (1000, u'hyd')), (11, (5000, u'hyd')), (13, (4000, u'pune'))]
+>>> #I want citysalpair
+... 
+>>> citysalpair=ij.map(lambda x:(x[1][1],x[1][0]))
+>>> citysalpair.collect()
+[(u'delhi', 2000), (u'delhi', 3000), (u'hyd', 1000), (u'hyd', 5000), (u'pune', 4000)]
+>>> #now data is ready for reduceByKey()
+... 
+>>> citysumsal=citysalpair.reduceByKey(lambda x,y:x+y)
+>>> citysumsal.collect()
+[(u'pune', 4000), (u'hyd', 6000), (u'delhi', 5000)]
+

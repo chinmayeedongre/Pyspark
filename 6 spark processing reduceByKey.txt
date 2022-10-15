@@ -1,0 +1,27 @@
+#Task:  select sex,sum(sal) from emp group by sex
+
+o/p  m  totsal
+     f  totalsal
+
+>>> #step 1: Loading data from HDFS
+... 
+>>> r1=sc.textFile("hdfs://localhost:9000/sparklab/emp")
+>>> r1.collect()
+[u'101,miller,10000,m,11', u'102,Blake,20000,f,12', u'103,sony,30000,m,12', u'104,sita,40000,f,13', u'105,John,50000,m,11']
+>>> 
+>>> #step 2 :splitting
+... 
+>>> e=r1.map(lambda x:x.split(","))
+>>> e.collect()
+[[u'101', u'miller', u'10000', u'm', u'11'], [u'102', u'Blake', u'20000', u'f', u'12'], [u'103', u'sony', u'30000', u'm', u'12'], [u'104', u'sita', u'40000', u'f', u'13'], [u'105', u'John', u'50000', u'm', u'11']]
+>>> pair=e.map(lambda x:(x[3],x[2]))
+>>> pair=e.map(lambda x:(x[3],int(x[2])))
+>>> pair.collect()
+[(u'm', 10000), (u'f', 20000), (u'm', 30000), (u'f', 40000), (u'm', 50000)]
+>>> #now it is in (k,v) pair--->we can apply reduceByKey()
+... 
+>>> res=pair.reduceByKey(lambda x,y:x+y)
+>>> res.collect()
+[(u'm', 90000), (u'f', 60000)]
+>>> 
+

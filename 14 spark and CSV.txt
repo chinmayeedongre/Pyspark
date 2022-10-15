@@ -1,0 +1,168 @@
+#working with csv(Comma seperated values)
+
+hadoop@ubuntu:~$ hdfs dfs -put emp1.csv /pysparklab
+hadoop@ubuntu:~$ hdfs dfs -cat /pysparklab/emp1.csv
+eid,ename,salary,sex,dno,city
+101,Miller,40000,m,11,hyd
+102,Blake,50000,m,12,pune
+103,Sony,60000,f,11,pune
+104,Sita,70000,f,12,hyd
+105,John,80000,m,13,hyd
+
+>>> df=spark.read.format("csv").load("hdfs://localhost:9000/pysparklab/emp1.csv")
+
+>>> df.show()                                                                   
++---+------+------+---+---+----+
+|_c0|   _c1|   _c2|_c3|_c4| _c5|
++---+------+------+---+---+----+
+|eid| ename|salary|sex|dno|city|
+|101|Miller| 40000|  m| 11| hyd|
+|102| Blake| 50000|  m| 12|pune|
+|103|  Sony| 60000|  f| 11|pune|
+|104|  Sita| 70000|  f| 12| hyd|
+|105|  John| 80000|  m| 13| hyd|
++---+------+------+---+---+----+
+----------------------------------------------------------------------------------------------
+II-method:
+
+>>> df=spark.read.csv("hdfs://localhost:9000/pysparklab/emp1.csv")
+>>> df.show()
++---+------+------+---+---+----+
+|_c0|   _c1|   _c2|_c3|_c4| _c5|
++---+------+------+---+---+----+
+|eid| ename|salary|sex|dno|city|
+|101|Miller| 40000|  m| 11| hyd|
+|102| Blake| 50000|  m| 12|pune|
+|103|  Sony| 60000|  f| 11|pune|
+|104|  Sita| 70000|  f| 12| hyd|
+|105|  John| 80000|  m| 13| hyd|
++---+------+------+---+---+----+
+----------------------------------------------------------------------------------------------
+To set header names:
+
+>>> df2=spark.read.option("header",True).csv("hdfs://localhost:9000/pysparklab/emp1.csv")
+>>> df2.show()
++---+------+------+---+---+----+
+|eid| ename|salary|sex|dno|city|
++---+------+------+---+---+----+
+|101|Miller| 40000|  m| 11| hyd|
+|102| Blake| 50000|  m| 12|pune|
+|103|  Sony| 60000|  f| 11|pune|
+|104|  Sita| 70000|  f| 12| hyd|
+|105|  John| 80000|  m| 13| hyd|
++---+------+------+---+---+----+
+-----------------------------------------------------------------------------------------------
+Reading multiple csv files at a time
+
+#ex:  df=spark.read.csv(["csvfilepath1","csvfilepath2","csvfilepath3"])
+
+>>> df3=spark.read.csv(["hdfs://localhost:9000/pysparklab/emp1.csv","hdfs://localhost:9000/pysparklab/emp1.csv","hdfs://localhost:9000/pysparklab/emp1.csv"])
+>>> df3.show()
++---+------+------+---+---+----+
+|_c0|   _c1|   _c2|_c3|_c4| _c5|
++---+------+------+---+---+----+
+|eid| ename|salary|sex|dno|city|
+|101|Miller| 40000|  m| 11| hyd|
+|102| Blake| 50000|  m| 12|pune|
+|103|  Sony| 60000|  f| 11|pune|
+|104|  Sita| 70000|  f| 12| hyd|
+|105|  John| 80000|  m| 13| hyd|
+|eid| ename|salary|sex|dno|city|
+|101|Miller| 40000|  m| 11| hyd|
+|102| Blake| 50000|  m| 12|pune|
+|103|  Sony| 60000|  f| 11|pune|
+|104|  Sita| 70000|  f| 12| hyd|
+|105|  John| 80000|  m| 13| hyd|
+|eid| ename|salary|sex|dno|city|
+|101|Miller| 40000|  m| 11| hyd|
+|102| Blake| 50000|  m| 12|pune|
+|103|  Sony| 60000|  f| 11|pune|
+|104|  Sita| 70000|  f| 12| hyd|
+|105|  John| 80000|  m| 13| hyd|
++---+------+------+---+---+----+
+
+-----------------------------------------------------------------------------------------------
+Reading all the csv files in a directory(assume 10 files)
+
+syntax: df=spark.read.csv("folder path")
+
+create a new HDFS diretory(csv) and store all the csv files in it
+
+hadoop@ubuntu:~$ hdfs dfs -mkdir /pysparklab/csv
+
+hadoop@ubuntu:~$ cat emp1.csv > emp2.csv
+
+hadoop@ubuntu:~$ hdfs dfs -put emp1.csv emp2.csv /pysparklab/csv
+
+hadoop@ubuntu:~$ hdfs dfs -ls /pysparklab/csv
+Found 2 items
+-rw-r--r--   1 hadoop supergroup        155 2022-07-17 05:54 /pysparklab/csv/emp1.csv
+-rw-r--r--   1 hadoop supergroup        155 2022-07-17 05:54 /pysparklab/csv/emp2.csv
+
+hadoop@ubuntu:~$ hdfs dfs -cat /pysparklab/emp/emp2.csv
+eid,ename,salary,sex,dno,city
+101,Miller,40000,m,11,hyd
+102,Blake,50000,m,12,pune
+103,Sony,60000,f,11,pune
+104,Sita,70000,f,12,hyd
+105,John,80000,m,13,hyd
+
+
+>>> df=spark.read.csv("hdfs://localhost:9000/pysparklab/csv")
+>>> df.show()
++---+------+------+---+---+----+
+|_c0|   _c1|   _c2|_c3|_c4| _c5|
++---+------+------+---+---+----+
+|eid| ename|salary|sex|dno|city|
+|101|Miller| 40000|  m| 11| hyd|
+|102| Blake| 50000|  m| 12|pune|
+|103|  Sony| 60000|  f| 11|pune|
+|104|  Sita| 70000|  f| 12| hyd|
+|105|  John| 80000|  m| 13| hyd|
+|eid| ename|salary|sex|dno|city|
+|101|Miller| 40000|  m| 11| hyd|
+|102| Blake| 50000|  m| 12|pune|
+|103|  Sony| 60000|  f| 11|pune|
+|104|  Sita| 70000|  f| 12| hyd|
+|105|  John| 80000|  m| 13| hyd|
++---+------+------+---+---+----+
+---------------------------------------------------------------------------------------------
+#specifying a delimiter
+-by default it is comma,but we can set to other delimiter like '\t',' ','||'
+
+#syntax:
+df=spark.read.options(delimiter=',').csv("filepath")
+
+-----------------------------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

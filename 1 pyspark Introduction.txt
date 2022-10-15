@@ -1,0 +1,808 @@
+Pyspark:
+--------
+
+1.what is Apache Spark
+
+2.Why Pyspark?
+
+3.Need for Pyspark
+
+4.Spark Python Vs Scala
+
+5.Pyspark features
+
+6.Real-time usage of Pyspark
+
+7.Jobmarket
+
+----------------------------------------------------------------------------------
+what is Apache Spark
+
+-Spark was developed by MAtei Zaharia in AMP Lab
+
+-It was opensourced in 2010
+
+-It was donated to Apache s/W Foundation in the year 2013
+
+--------------------------------------------------------------------------------------
+Spark is a
+-Opensource
+-distributed Execution framework
+-cluster computing
+-in-memory computing with
+-parallel process style
+-for large scale data processing 
+--------------------------------------------------------------------------------------
+Apache spark can be coded with
+     -Scala (default)
+     -Python
+     -Java
+     -R-Language
+
+--------------------------------------------------------------------------------------
+Why Pyspark?
+
+Pyspark is  the Python API to use Spark
+
+Pyspark is a lightening fast technology that is designed for fast computing...
+
+Pyspark is a demanding tool among the data engineers to work with bigger daasets
+
+Pyspark used for running distributed sql,creating data pipelines,ingestion data into a database,
+running ML algorithms ,working with graph algorithms ,working with data streams
+
+pyspark packages :
+Pyspark
+pyspark.sql
+pyspark.streaming
+pyspark.ml
+pyspark.mllib
+
+Spark + Python =Pyspark
+
+Spark Python Vs Scala 
+
+        Python                                      Scala
+1.Python is Dynamic typed and interpreted           1.Scala os statically typed
+    
+2.Python is slower than scala bcoz it               2.Scala is 10 times faster than python
+  is interpreted
+
+3. Python has huge Community                        3.smaller community
+
+4.Python contains powerfull libraries               4. Scala has no such
+  for machine learning,Graph algorithms
+
+5.wide varieties of built-in modules                5.No modules
+
+----------------------------------------------------------------------------------------------
+
+
+Pyspark features:
+----------------
+1)In-memory computation
+
+2)Lazy evolution -->on demand making the dataflow to execute.
+
+3)Fault-Tolerant
+
+4)Immutability
+
+5)partitioning
+
+6)persistence
+
+------------------------------------------------------------------------------------------------
+
+pyspark is maily designed for 
+1)Batch Applications
+2)Iterative Algorithms
+3)Interactive queries
+4)streaming
+
+-----------------------------------------------------------------------------------------------
+Real-time usage of Pyspark
+--------------------------
+
+1)Commercial sector:
+
+2)Healthcare
+
+3)Entertainment
+
+4)E-commerce 
+
+5)Tourism :
+
+-----------------------------------------------------------------------------------------------
+
+Pyspark sql:---->for creating dataframes and performing querying 
+
+-----------------------------------------------------------------------------------------------
+
+yahoo--------->Table---->100TB---->1024cols
+               Task----->sorting based on 16cols
+
+Time Taken by
+
+1)Oracle------->3.5days
+
+2)mysql ------>6days
+
+3)Teradata---->4.5hrs
+
+4)Netezza --->3hrs
+
+5)Hadoop ---->3.4mins
+              1.2mins
+
+spark is 100 times faster than hadoop
+
+-----------------------------------------------------------------------------------------------
+  RDDS (Resilient Distributed Datasets)
+
+-Spark Data objects are called RDDs
+
+-RDDs are sub-divided into partitions
+
+-These partitions are distributed across multiple RAMS of multiple slave nodes
+
+-RDD Programming style is "Dataflow"
+
+-Dataflow is a sequence collection of pipes
+
+-A pipe is a data operation such as loading  data, transforming data, filtering data,
+  grouping data, merging data etc
+
+-In Spark,Dataflow is executed in sequence i.e RDD by RDD (one after the another)
+ with in-memory computing feature and persistence feature
+
+-But if a RDD has 30partitions , then they can execute in paralallel
+
+-----------------------------------------------------------------------------------------------
+
+ 
+ in the above flows ,each time flow is re-executing from the begining even though
+ the 1st 3 steps are common
+
+ so to avoid this,
+ we need to identify the rdd,whose o/p is commonly used by many diff flows persist it
+
+ here R3 o/p is used by many flows, so make R3 as persist ---->R3.persist()
+
+ then no need to execute from begininig
+
+ here in 2nd and 3rd flows, we can reuse the R3 o/p, if it is persisted, no need to
+ re-execute from the beginning.
+
+ Here R3 remains in the Ram,eventhough its next DD is ready and provides the o/p as i/p
+ to the next RDD.
+
+
+--------------------------------------------------------------------------------------------
+
+in all the above flows, even if the flow is completed, Still R3 is remained in RAM.
+
+
+if R3 is not required----->You can forcefully unpersist it by saying R3.unpersist()
+
+
+1Q) What are the ways to unpersist an RDD---->3ways
+
+ i) Forcefully unpersisting----->RDD.unpersist()
+ii) when session is closed
+iiii)when server shutdowns
+
+
+2Q) what are situations where RDD will be removed from the RAM automatically during computation
+  1) whenever next RDD is ready,previous RDD gets removed
+  2) when execution is completed, the last RDD gets removed
+
+3Q)Generally which RDD will be persisted?
+  -The RDD whose o/p is commonly used by many flows,then  that RDD will be persisted
+
+4Q) what do you mean by LAzy Evolution?
+    Executing the flow on demand by peforming an action, untill then the flow wont execute
+    This is called as Lazy Evolution
+
+---------------------------------------------------------------------------------------------
+Fault Tolerance model in Spark:
+------------------------------
+
+Case 1: when current RDD machine is down
+        R1 - R2
+
+During the Execution of current RDD(R2), if any one of the partition machine of current RDD
+is down, then all the Current RDD partitions(p1,p2,p3) will be deallocated (Cleared from the 
+RAM) and reloaded into other slaves by taking the i/p from the previous RDD(R1)
+
+3 partitions are storred in 3 different machines excluding the machine which is down
+
+---------------------------------------------------------------------------------------------
+Case 2:IF previous RDD is down
+
+During execution of R3,while taking the i/p from R2,if suddenly R2 Failed, then 
+R2 cant be re-loaded (or) reinitiated in other machines bcoz R2 i/p is R1 which is 
+not available in RAM. so the proccess should start from begining  (or) from the persisted RDD
+
+
+---------------------------------------------------------------------------------------------
+Case 3: If a persisted RDD machine is down
+
+here the flow will be re-executed automatically from the beginning till R3 without
+performing action and r3 will be re-persisted.
+
+---------------------------------------------------------------------------------------------
+Case 4: while executing R5,while taking i/p from R4, if R4 is failed then 
+        the i/p is taken from R3 which is peristed and is available in RAM and R4 partitions will be
+        reloaded and provides i/p to R5.
+
+----------------------------------------------------------------------------------------------
+case 5: if 2 RDD's are persisted
+        R1- R2- R3 -R4 - R5 - R6 -R7
+        here R3 and R6 are persisted
+
+       case i :If R7 machine is down ?
+               then R6 is persisted and available in RAM
+               and  R7 takes i/p from R6 and recomputes
+
+       case ii: if R6 is down
+                then the flow re-executes from R3(which is persisted) to R6 automatically
+                and R6 will be re-persisted.
+
+       case iii: If R3 machine is down then the flow will be re-executed from R1 to R3
+                 automatically anf R3 will be re-persisted.
+
+
+---------------------------------------------------------------------------------------------
+Importantance of persistance
+
+ex:  R1 - R2 - R3 ...................R90
+
+Case 1: During computation of R90 ,while taking i/p from R89, if R90 is down then
+        takes i/p from R-89 and R90 is reloaded into other machines and computed
+
+
+Case 2: During computation of R90 ,while taking i/p from R89 ,if R89 is down 
+        here  R89 cannot be reloaded bcoz R88 is not available
+        then the flow will start from the beginning i.e from R1...
+
+Case 3:  while re-executing again ,while executing R86,if R85 is down then again
+         the flow will start from the begining i.e from R1
+
+case 4 :while re-executing, while executing R82,if R81 is down ---->then again it should
+        start from the begining..
+
+assume if R-80 is persisted then no need to execute from the beginning then the flow will
+will be started from R80 instead of R1.
+
+here a problem,
+
+while computing R-75 , if R-74 is down then the flow will start from the begininning
+
+so the best way is you persist for every 25 RDDs (or) if the memory is good then persist 
+for every 10 RDDS i.e R10,R20,R30,R40.......R90
+
+once the flow is executed and action is completed then you can un-persist all the RDDS
+R10.unpersist()
+R20.unpersist()
+R30.unpersist()
+
+unpersisting happens immediately on demand
+but persisting wont happen immediately --->persistence of a RDD happens only when 1st time the 
+RDD is loaded into RAM
+
+-----------------------------------------------------------------------------------------------
+
+On a RDD ,2 Types of operations can be performed
+1)Transformations
+2)Actions
+
+1)Transformations :  3 Types
+i) Each element Transformation:
+               ex:map(),flatMap()
+               ex: if 1lakh employees then adding 10000 to the salaries of each employee
+               ex:Rdd.map(.......)
+                  Rdd.flatMap(....)
+
+ii) Filter Transformation :
+                 ex: filter(),filterByRange()
+                 ex:Filter based on product,or city etc
+                 ex:Rdd.filter(........)
+
+iii)Aggregated Transformation:
+                 ex: groupByKey() ,reduceByKey()
+
+----------------------------------------------------------------------------------------------
+2)Actions : when an action is performed on a RDD, then only the dataflow will be executed from 
+            the root RDD or from persisted RDD
+
+  some of the actions are:
+i)collect() :will collect all the partitions data of different slave machines into client machine
+             ex: Rdd.collect()
+
+ii)count() : no.of elements in a RDD
+             ex:Rdd.count()
+
+iii)Take() : takes first ' n' no elements in a RDD
+             It is similar to limit in sql
+
+             ex:RDD.take(10)
+                means taking 1st 10 records
+                if partition1 has only 5 records
+                         it takes 5 records from partition1
+                            and   5 records from partition2
+
+iv)saveAsTextFile(): storing the reseult into a file
+
+-----------------------------------------------------------------------------------------------
+At each Rdd ,transformation or filter will be done to the data
+
+Note:i) If we perform Transformation on a RDD, the resultant we get is also a RDD(spark object)
+    ii) If we perform action on a RDD, the resultant is a local object(python object)
+
+
+ RDD1= sc.textFile("HDFS filepath") #whenever we load a file using sparkcontext then a Rdd is created
+
+ RDD2=RDD1.map(".......")
+      
+ RDD3=RDD2.filter("......")
+      
+ RDD4=RDD3.map(".....")
+      
+ RDD5=RDD4.reduceByKey("....")
+      
+ res1=RDD5.collect()  here res1 is not spark object, it is python object like list
+
+ here this res1(final result) is collected and stored into client machine
+
+ Transformations---RDDS----->stored at spark cluster side
+
+ how many RDDS----->5
+
+ where all these 5 RDDs are stored??----->Nowhere
+                                          they will loaded one by one into spark cluster
+                                          whenever action is performed
+
+Before action is peformed ---->how many RDDS in RAM---->0
+After action is executed  ---->how many RDDS in RAM---->0
+
+----------------------------------------------------------------------------------------------
+Steps in RDD Execution:
+-----------------------
+
+Step 1: Initilaly all the RDDs are declared, they are not stored antwhere
+        we load and execute then on demand by performing an action,this is called as 
+        Lazy Evolution
+
+Step 2: when action is performed ,flow execution will start from its Root RDD or 
+        available RDD.
+
+Step 3: During flow excution, Each RDD partitions data will be loaded into RAM and computed
+        ar RAM
+
+Step 4: Once RDD computation is over, it waits for its next RDD,
+        If next RDD is ready ,previous RDD will be removed from the RAM.
+        This continues till the action is completed
+
+Step 5: when action is performed , all the RDDS are stored and computed at spark side
+        (i.e spark cluster machines) but the final result(Res) which is produced
+        after the execution of the action  is colledted and stored in client machine
+
+
+Step 6: During the flow Execution, the RDD which is commonly used by many flow will be
+        be persisted.
+        
+
+Step 7: Finally the RDD which is stored in the RAM will be unperisisted
+
+---------------------------------------------------------------------------------------------
+Persistence of a RDD :
+--------------------
+
+Persisting an RDD means,making the RDD available in the Ram.
+
+-Eventhough the next RDD is ready and computed the persisted RDD wont be removed from the 
+ RAM.
+
+Advantage of RDD Persistence:
+-If a RDD is persisted,then all the other flows can reuse the executed  TRansformations
+
+Steps in RDD Persistence
+
+1.The RDD whose output is commonly used by many flows then such RDD is persisted
+
+2.we need to persist the RDD before action is peformed
+
+3.For persisting the RDD,atleast one flow should be executed
+
+4.RDDs will be persisted when first time they are loaded and computed eventhough 
+  the persist option is specified in the later steps
+
+ ex:
+ R1=sc.textFile("........./file1")
+ R2=R1.map(" ......")
+ R3=R2.filter("......")
+ R4=R3.map(".........")
+ R5=R4.reduceByKey(".....")
+ R3.persist()
+ res=R5.collect()
+
+ here 5 RDD's are declared
+ 
+here upto now,no RDD is loaded (or)computed (or)persisted
+
+Now action is performed----->R5.collect()-->then the flow executes from the the Root.
+
+The Execution is:
+
+R1--->loaded + Computed
+
+R2 -->Loaded + computed & Ready
+      Now R1 will be removed.
+
+R3 -->Loaded+computed +persited immediately even though the persist option is given after R5 
+      Now R2 will be removed.
+
+R4 -->Loaded + computed & Ready
+
+R5 --->Loaded + computed & Ready
+       Now R4 will be removed 
+       when Action(Collect) execution is completed then R5 will be removed.
+
+
+Flow-I
+R1=.....
+R2=R1.....
+R3=R2.....
+R4=R3....
+R3.persist
+R5=R4....
+
+Flow-II
+R1=.....
+R2=R1.....
+R3=R2.....
+R4=R3....
+R5=R4....
+R3.persist
+
+Flow-III
+R1=.....
+R2=R1.....
+R3=R2.....
+R3.persist
+R4=R3....
+R3.persist
+R5=R4....
+
+in all the above 3 flows the RDD(R3) will be persisted 
+
+
+Flow-4
+
+R1=....
+R2=R1...
+R3=R2...
+R4=R3...
+R5=R4...
+R2.persist()------->RDDs(R2,R3) will be persisted
+R3.persist()
+R5.collect()
+
+Flow-5
+
+R1=....
+R2=R1...
+R2.persist()
+R3=R2...
+R3.persist()------->both are persisted.
+R4=R3...
+R5=R4...
+R5.collect()
+
+Flow-6
+R1=....
+R2=R1...
+R3=R2...
+R4=R3...
+R5=R4...
+R5.collect()
+R3.persist()-------->It wont be persited as once the action is completed, no RDD remain in RAM
+                     You are  trying to persist an RDD,which is not available
+
+There are 2 ways to persist a RDD
+1.RDD.persist()
+2.RDD.cache()
+
+-----------------------------------------------------------------------------------------------
+Persistence options of a RDD:
+---------------------------
+1)MEMORY_ONLY
+2)MEMORY_SER_ONLY
+3)DISK_ONLY
+4)DISK_SER_ONLY
+5)MEMORY_AND_DISK
+
+serializatiom --------> Object---->byte
+deserialization   ----> byte ----->object
+RDD will be persisted in RAM in object format only.
+
+          MEMORY_ONLY                   MEMORY_SER_ONLY
+
+1.Storage    : RAM                    1.Storage  :RAM
+
+2. Format    : Object                 2.Format : Byte format to be de-serialized
+                                                 to be converted into object format
+
+3.Advantage: High Speed,              3.Advantage: Less memory space
+ bcoz ,no need to deserialize           i.e less occupancy in RAM ,bcoz of serialized form
+ bcoz RDD is already in object format   Serialized format will save 50% of occupancy
+                                        so bigger RDD can fit into RAM.
+
+4.Disadvantage:                       4. Disadvantage:
+  -More memory space                     -Less speed
+  -More memory occupancy                  bcoz during computation RDD has to be 
+   bcoz of object format                   deserialized and need to be convertd into object format
+  -bigger RDD's cannot fit
+
+--------------------------------------------------------------------------------------------4
+3)  DISK-only                vs     4)DISK_SER_ONLY
+
+In both the cases, The RDD volume is biger, which cannot be loaded into RAM.
+so flow execution fails,so we can persist the RDD into disk4
+
+1.Storage    : DISK                   1.Storage  :DISK
+
+2. Format    : Object                 2.Format : serialized byte format
+
+3.Advantage: High Speed,              3.Advantage: Less memory space
+ bcoz ,no need to deserialize           i.e less occupancy in RAM ,bcoz of serialized form
+ bcoz RDD is already in object format   Serialized format will save 50% of occupancy
+                                        so bigger RDD can fit into RAM.
+
+4.Disadvantage:                       4. Disadvantage:
+  -More memory space requires             -Less speed
+  -More memory occupancy                  bcoz during computation RDD has to be 
+   bcoz of object format                   deserialized and need to be convertd into object format
+  -bigger RDD's cannot fit
+
+----------------------------------------------------------------------------------------------                             
+Advantage of MEMORY over DISk----------->RAM Computing faster than disk
+
+Advantage of Disk over Memory----------->here larger or bigger RDDS can be persisted.
+
+
+-------------------------------------------------------------------------------------------
+5)MEMORY_AND_DISK:
+
+ 1)Storage : RAM (or) DISK
+             but preference to RAM, if RAM not available--->then it goes for disk
+
+ 2)format  :object format
+
+ 3)Advantage :can be loaded either into RAM (or) Disk 
+
+
+ex: 
+    RDD size 8GB
+    RAM size 8GB
+    currently other RDD is in RAM.
+    so only 5GB is available
+    so first RDD is persisted in disk
+    after sometime if RAM becomes Free, it will be loaded into RAM and persisted,
+
+ex:
+    100TB--->RDD
+             we have 10 machines---->5TB memory each =50TB ,so 100 TB cannot fit into 50TB
+
+  R1--5TB----->computed at RAM
+  R2--5TB ---->   "     "   "
+  R3--100TB--->   "     at disk
+                o/p of R3 is taken from the disk by R4 and computes at RAM
+  R4--5TB     computed at RAM
+  R5--5TB     computed at RAM
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+         
+   
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+               
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Accepting 2 values from the user and performing Addition
+
+i)using JAva
+
+class sample
+{
+ Public static void main(String args[]) throws IOException
+ {
+  InputStreamReader isr=new InputStreamReader(System.in);
+  BufferedReader br=new BufferedReader(isr);
+  System.out.println("Enter 1st No:");
+  String s1=br.readLine();
+  int i=Integer.parseInt(s1);
+  System.out.println("Enter 2nd No:");
+  String s2=br.readLine();
+  int j=Integer.parseInt(s2;
+  System.out.println(i+j)
+  }
+ }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

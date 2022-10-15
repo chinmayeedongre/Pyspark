@@ -1,0 +1,1282 @@
+spark sql:
+---------
+
+-Spark sql is used to process Spark data objects using SQL statements
+
+-Spark data objects are called RDDs
+
+-on top of RDDs, Dataframes were introduced.
+
+-RDDs need to be converted as DataFrames and these DataFrames should be registered
+ as tables to execute sql stmts
+
+-DataFeames are equivalent yo temporary tables of sql
+
+-Spark SQL follows MySql standard Sql
+
+-Spark core provides spark context object.
+
+-Spark sql provides SQLcontext objectt to perform  DF operations and RDD operations.
+
+-Spark Sql has a sub-component called sparkhql, which provides one more context object
+ called hive context object,usig this spark can be integrated with hive, so that from
+ spark itself we can perform DDL and DML operations with in-memory computing feature.
+
+Operations on a RDD---->sparkcontext
+Operations on a DF ---->Sqlcontext
+Operatios on hive tables-->HiveContext
+
+----------------------------------------------------------------------------------------------
+DataFrame is a collection of Row objects, each Row object represents a record
+
+-DF provides operations to SQL queries which is nor present in RDD
+
+-DF can be created in 4ways
+ i)from RDDs
+ii)from local objects
+iii)from results of queries
+iv)from external Data sources
+-----------------------------------------------------------------------------------------------
+i)from RDDs ---->rdd.toDF
+
+ii)for converting local object or RDD into DF,we use the following method
+   spark.createDataFrame(List/RDD,schema)
+   1st parameter---->either List or RDD
+   2nd parmater ---->Column names
+----------------------------------------------------------------------------------------------
+we create Dataframe using
+1)spark session
+2)sqlContext
+  df1=spark.createDataFrame(RDD)   //using spark session object
+                                   //here spark indicates spark session object
+  df1=sqlContext.createDataFrame(RDD) //using sql context
+
+-----------------------------------------------------------------------------------------------
+4 Different ways of providing schema
+1.While creating DF,providing schema
+2.using dictionary
+3.using Row object
+4.using StructType
+
+-----------------------------------------------------------------------------------------------
+ex:1  Creating Dataframes from lists
+
+>>> x=[('miller',25)]
+>>> df=spark.createDataFrame(x)
+
+>>> df.show()
+-------------                                                                                                              +------+---+
+|    _1| _2|
++------+---+
+|miller| 25|
++------+---+
+
+-----------------------------------------------------------------------------------------
+ex:2 creating DF with schema
+
+>>> x=[('miller',25),('Ajay',30)]
+>>> df=spark.createDataFrame(x,['name','age'])
+>>> df.collect()
+[Row(name=u'miller', age=25), Row(name=u'Ajay', age=30)]
+>>> df.show()
++------+---+
+|  name|age|
++------+---+
+|miller| 25|
+|  Ajay| 30|
++------+---+
+
+----------------------------------------------------------------------------------------------
+3) to count the no of rows in DF
+
+>>> df.count()
+2
+
+---------------------------------------------------------------------------------------------
+4)printSchema():
+
+>>> df.printSchema()
+root
+ |-- name: string (nullable = true)
+ |-- age: long (nullable = true)
+
+----------------------------------------------------------------------------------------------
+5) ex:3  using Dictionary providing schema,creating DF
+
+>>> d=[{'name':'miller','age':25}]
+>>> df=spark.createDataFrame(d)
+
+>>> df.collect()
+[Row(age=25, name=u'miller')]
+>>> df.show()
+
++---+------+
+|age|  name|
++---+------+
+| 25|miller|
++---+------+
+UserWarning: inferring schema from dict is deprecated,please use pyspark.sql.Row instead
+
+-----------------------------------------------------------------------------------------------
+6)  ex:4  Creating a DF from RDD
+
+>>> x=[('miller',25)]
+>>> rdd1=sc.parallelize(x)
+>>> df1=spark.createDataFrame(rdd1)
+>>> df1.collect()
+[Row(_1=u'miller', _2=25)]
+>>> #adding schema to a RDD
+... 
+>>> df2=spark.createDataFrame(rdd1,['name','age'])
+>>> df2.show()
++------+---+
+|  name|age|
++------+---+
+|miller| 25|
++------+---+
+-----------------------------------------------------------------------------------------------
+7)  ex:5 Creating a DF using Row object
+
+>>> x=[('miller',25)]
+>>> rdd1=sc.parallelize(x)
+>>> #now providing schema to a RDD
+... 
+>>> student=Row('name','age')
+>>> student1=rdd1.map(lambda r:student(*r)
+... 
+... )
+>>> student1.collect()
+[Row(name='miller', age=25)]
+>>> df3=spark.createDataFrame(student1)
+>>> df3.collect()
+[Row(name=u'miller', age=25)]
+>>> df3.show()
++------+---+
+|  name|age|
++------+---+
+|miller| 25|
++------+---+
+---------------------------------------------------------------------------------------------------------------------------
+8)ex:6 providing schema using StructType
+
+>>> from pyspark.sql.types import *
+>>> schema=StructType([
+... StructField("name",StringType(),True),
+... StructField("age",IntegerType(),True)])
+>>> spark.createDataFrame(rdd1,schema)
+DataFrame[name: string, age: int]
+>>> df3=spark.createDataFrame(rdd1,schema)
+>>> df3.show()
++------+---+
+|  name|age|
++------+---+
+|miller| 25|
++------+---+
+
+------------------------------------------------------------------------------------------------------------------------
+9)changing schema or column names
+
+>>> rdd1=sc.parallelize([('miller',25)]
+... )
+>>> df4=spark.createDataFrame(rdd1,"stdname:string,stdage:int")
+>>> df4.show()
++-------+------+
+|stdname|stdage|
++-------+------+
+| miller|    25|
++-------+------+
+
+------------------------------------------------------------------------------------------------------------------------
+10)>>> df4.rdd.getNumPartitions()
+       1
+
+-----------------------------------------------------------------------------------------------
+11) Creating emp records
+
+>>> from pyspark.sql import Row
+>>> x=[(101,'miller',10000,'m',11),(102,'Blake',20000,'m',12),(103,'sony',30000,'f',13)]
+>>> r1=sc.parallelize(x)
+>>> df=spark.createDataFrame(r1,['eid','ename','sal','sex','dno'])
+>>> df.collect()
+[Row(eid=101, ename=u'miller', sal=10000, sex=u'm', dno=11), Row(eid=102, ename=u'Blake', sal=20000, sex=u'm', dno=12), Row(eid=103, ename=u'sony', sal=30000, sex=u'f', dno=13)]
+>>> df.show()
++---+------+-----+---+---+
+|eid| ename|  sal|sex|dno|
++---+------+-----+---+---+
+|101|miller|10000|  m| 11|
+|102| Blake|20000|  m| 12|
+|103|  sony|30000|  f| 13|
++---+------+-----+---+---+
+
+----------------------------------------------------------------------------------------------
+12)
+Loading data from HDFS and Creating RDD and converting that into DF
+
+>>> r1=sc.textFile("hdfs://localhost:9000/sparklab/emp")
+>>> r1.collect()
+[u'101,miller,10000,m,11', u'102,Blake,20000,f,12', u'103,sony,30000,m,12', u'104,sita,40000,f,13', u'105,John,50000,m,11']
+>>> r1.getNumPartitions()
+1
+>>> r1=sc.textFile("hdfs://localhost:9000/sparklab/emp",2)
+>>> r1.getNumPartitions()
+2
+>>> r2=r1.map(lambda x:x.split(","))
+>>> r2.collect()
+[[u'101', u'miller', u'10000', u'm', u'11'], [u'102', u'Blake', u'20000', u'f', u'12'], [u'103', u'sony', u'30000', u'm', u'12'], [u'104', u'sita', u'40000', u'f', u'13'], [u'105', u'John', u'50000', u'm', u'11']]
+>>> r3=r2.map(lambda x:Row(eid=int(x[0]),ename=x[1],sal=int(x[2]),sex=x[3],dno=int(x[4])))
+>>> df=spark.createDataFrame(r3)
+>>> df.show()
++---+---+------+-----+---+
+|dno|eid| ename|  sal|sex|
++---+---+------+-----+---+
+| 11|101|miller|10000|  m|
+| 12|102| Blake|20000|  f|
+| 12|103|  sony|30000|  m|
+| 13|104|  sita|40000|  f|
+| 11|105|  John|50000|  m|
++---+---+------+-----+---+
+
+>>> df.printSchema()
+root
+ |-- dno: long (nullable = true)
+ |-- eid: long (nullable = true)
+ |-- ename: string (nullable = true)
+ |-- sal: long (nullable = true)
+ |-- sex: string (nullable = true)
+
+>>> emps=spark.createDataFrame(r3)
+>>> emps.show()
++---+---+------+-----+---+
+|dno|eid| ename|  sal|sex|
++---+---+------+-----+---+
+| 11|101|miller|10000|  m|
+| 12|102| Blake|20000|  f|
+| 12|103|  sony|30000|  m|
+| 13|104|  sita|40000|  f|
+| 11|105|  John|50000|  m|
++---+---+------+-----+---+
+-----------------------------------------------------------------------------------------------
+working with different API's of DF
+
+1)select() :to select (or) extract a particular column
+
+>>> e1=emps.select("ename")
+>>> e1.show()
++------+
+| ename|
++------+
+|miller|
+| Blake|
+|  sony|
+|  sita|
+|  John|
++------+
+here e1 is also a DataFrame
+
+2) To extract multiple columns
+
+>>> emps.select("ename","sal").show()
++------+-----+
+| ename|  sal|
++------+-----+
+|miller|10000|
+| Blake|20000|
+|  sony|30000|
+|  sita|40000|
+|  John|50000|
++------+-----+
+
+Transformations:
+---------------
+Adding 3000 to each employee
+
+>>> salupdate=emps.select(emps.ename,emps.sal+3000)
+>>> salupdate.show()
++------+------------+
+| ename|(sal + 3000)|
++------+------------+
+|miller|       13000|
+| Blake|       23000|
+|  sony|       33000|
+|  sita|       43000|
+|  John|       53000|
++------+------------+
+
+-----------------------------------------------------------------------------------------------
+2)selectExpr():
+
+>>> emps.selectExpr("ename","sal+3000").show()
++------+------------+
+| ename|(sal + 3000)|
++------+------------+
+|miller|       13000|
+| Blake|       23000|
+|  sony|       33000|
+|  sita|       43000|
+|  John|       53000|
++------+------------+
+
+----------------------------------------------------------------------------------------------
+3)filter():
+
+>>> e1=emps.filter(emps.sal>20000)
+>>> e1.show()
++---+---+-----+-----+---+
+|dno|eid|ename|  sal|sex|
++---+---+-----+-----+---+
+| 12|103| sony|30000|  m|
+| 13|104| sita|40000|  f|
+| 11|105| John|50000|  m|
++---+---+-----+-----+---+
+when Transformation or filter is applied on a DF,the resultant is also a DF
+-----------------------------------------------------------------------------------------------
+4)collect() : returns all records as list of rows
+
+>>> emps.collect()
+[Row(dno=11, eid=101, ename=u'miller', sal=10000, sex=u'm'), Row(dno=12, eid=102, ename=u'Blake', sal=20000, sex=u'f'), Row(dno=12, eid=103, ename=u'sony', sal=30000, sex=u'm'), Row(dno=13, eid=104, ename=u'sita', sal=40000, sex=u'f'), Row(dno=11, eid=105, ename=u'John', sal=50000, sex=u'm')]
+>>> 
+
+-----------------------------------------------------------------------------------------------
+5)count() :Returns no of rows in a DataFrame
+
+>>> emps.count()
+5
+
+----------------------------------------------------------------------------------------------
+6)columns :Returns column names as list
+
+>>> emps.columns
+['dno', 'eid', 'ename', 'sal', 'sex']
+
+----------------------------------------------------------------------------------------------
+7)printSchema()
+
+>>> emps.printSchema()
+root
+ |-- dno: long (nullable = true)
+ |-- eid: long (nullable = true)
+ |-- ename: string (nullable = true)
+ |-- sal: long (nullable = true)
+ |-- sex: string (nullable = true)
+
+----------------------------------------------------------------------------------------------
+8)describe()
+
+>>> emps.describe().show()
++-------+------------------+------------------+-----+------------------+----+
+|summary|               dno|               eid|ename|               sal| sex|
++-------+------------------+------------------+-----+------------------+----+
+|  count|                 5|                 5|    5|                 5|   5|
+|   mean|              11.8|             103.0| null|           30000.0|null|
+| stddev|0.8366600265340758|1.5811388300841898| null|15811.388300841896|null|
+|    min|                11|               101|Blake|             10000|   f|
+|    max|                13|               105| sony|             50000|   m|
++-------+------------------+------------------+-----+------------------+----+
+------------------------------------------------------------------------------------------------
+9)distinct():returns a new DF containing distinct rows
+
+>>> d1=emps.select("dno")
+>>> d1.show()
+
++---+
+|dno|
++---+
+| 11|
+| 12|
+| 12|
+| 13|
+| 11|
++---+
+
+>>>d1.distinct().show()
++---+
+|dno|
++---+
+| 12|
+| 11|
+| 13|
++---+
+----------------------------------------------------------------------------------------------
+10)drop() :drops a particular column 
+>>> emps2=emps.drop('dno')
+>>> emps2.show()
++---+------+-----+---+
+|eid| ename|  sal|sex|
++---+------+-----+---+
+|101|miller|10000|  m|
+|102| Blake|20000|  f|
+|103|  sony|30000|  m|
+|104|  sita|40000|  f|
+|105|  John|50000|  m|
++---+------+-----+---+
+
+>>> emps3=emps.drop('dno','sal')
+>>> emps3.show()
++---+------+---+
+|eid| ename|sex|
++---+------+---+
+|101|miller|  m|
+|102| Blake|  f|
+|103|  sony|  m|
+|104|  sita|  f|
+|105|  John|  m|
+----------------
+-----------------------------------------------------------------------------------------------
+11) dropDuplicates(): drop duplicates based on multiple columns
+>>> df1=emps.dropDuplicates(['sex','dno'])
+>>> df1.show()
++---+---+------+-----+---+
+|dno|eid| ename|  sal|sex|
++---+---+------+-----+---+
+| 13|104|  sita|40000|  f|
+| 11|101|miller|10000|  m|
+| 12|102| Blake|20000|  f|
+| 12|103|  sony|30000|  m|
++---+---+------+-----+---+
+
+-----------------------------------------------------------------------------------------------
+12)first():
+
+>>> emps.first()
+Row(dno=11, eid=101, ename=u'miller', sal=10000, sex=u'm')
+
+-----------------------------------------------------------------------------------------------
+13)foreach():
+
+Applies function  foreach row of df
+
+>>> def display(emps):
+...   print(emps.ename)
+... 
+>>> emps.foreach(display)
+miller
+Blake
+sony
+sita
+John
+
+----------------------------------------------------------------------------------------------
+14)sort()
+>>> emps.sort(emps.sal).show()
++---+---+------+-----+---+
+|dno|eid| ename|  sal|sex|
++---+---+------+-----+---+
+| 11|101|miller|10000|  m|
+| 12|102| Blake|20000|  f|
+| 12|103|  sony|30000|  m|
+| 13|104|  sita|40000|  f|
+| 11|105|  John|50000|  m|
++---+---+------+-----+---+
+
+>>> emps.sort(emps.sal.desc()).show()
++---+---+------+-----+---+
+|dno|eid| ename|  sal|sex|
++---+---+------+-----+---+
+| 11|105|  John|50000|  m|
+| 13|104|  sita|40000|  f|
+| 12|103|  sony|30000|  m|
+| 12|102| Blake|20000|  f|
+| 11|101|miller|10000|  m|
++---+---+------+-----+---+
+
+>>> emps.sort(asc("ename")).show()
++---+---+------+-----+---+
+|dno|eid| ename|  sal|sex|
++---+---+------+-----+---+
+| 12|102| Blake|20000|  f|
+| 11|105|  John|50000|  m|
+| 11|101|miller|10000|  m|
+| 13|104|  sita|40000|  f|
+| 12|103|  sony|30000|  m|
++---+---+------+-----+---+
+
+>>> emps.sort(desc("ename")).show()
++---+---+------+-----+---+
+|dno|eid| ename|  sal|sex|
++---+---+------+-----+---+
+| 12|103|  sony|30000|  m|
+| 13|104|  sita|40000|  f|
+| 11|101|miller|10000|  m|
+| 11|105|  John|50000|  m|
+| 12|102| Blake|20000|  f|
++---+---+------+-----+---+
+
+----------------------------------------------------------------------------------------------
+15)orderBy():
+
+>>> emps.orderBy("ename").show()
++---+---+------+-----+---+
+|dno|eid| ename|  sal|sex|
++---+---+------+-----+---+
+| 12|102| Blake|20000|  f|
+| 11|105|  John|50000|  m|
+| 11|101|miller|10000|  m|
+| 13|104|  sita|40000|  f|
+| 12|103|  sony|30000|  m|
++---+---+------+-----+---+
+
+-----------------------------------------------------------------------------------------------
+16)getNumPartitions:
+
+>>> emps.rdd.getNumPartitions()
+1
+
+--------------------------------------------------------------------------------------------
+17)repartition():
+
+>>> emps.repartition(5).rdd.getNumPartitions()
+5
+
+ii)repartition on specified column: It shuffles the data
+
++---+---+------+-----+---+
+|dno|eid| ename|  sal|sex|
++---+---+------+-----+---+
+| 12|102| Blake|20000|  f|
+| 12|103|  sony|30000|  m|
+| 11|101|miller|10000|  m|
+| 11|105|  John|50000|  m|
+| 13|104|  sita|40000|  f|
++---+---+------+-----+---+
+
+>>> e1=emps.repartition("dno","sex")
+>>> e1.show()
+
++---+---+------+-----+---+
+|dno|eid| ename|  sal|sex|
++---+---+------+-----+---+
+| 12|102| Blake|20000|  f|
+| 12|103|  sony|30000|  m|
+| 13|104|  sita|40000|  f|
+| 11|101|miller|10000|  m|
+| 11|105|  John|50000|  m|
++---+---+------+-----+---+
+
+
+---------------------------------------------------------------------------------------------
+18)replace():
+>>> e1=emps.replace(['m','f'],['male','female'],'sex')
+>>> e1.show()
++---+---+------+-----+------+
+|dno|eid| ename|  sal|   sex|
++---+---+------+-----+------+
+| 11|101|miller|10000|  male|
+| 12|102| Blake|20000|female|
+| 12|103|  sony|30000|  male|
+| 13|104|  sita|40000|female|
+| 11|105|  John|50000|  male|
++---+---+------+-----+------+
+
+ex:2
+
+>>> emps.replace(["miller","Blake"],["Ajith","Rahul"],'enmae')
+DataFrame[dno: bigint, eid: bigint, ename: string, sal: bigint, sex: string]
+>>> emps2=emps.replace(["miller","Blake"],["Ajith","Rahul"],'ename')
+>>> emps2.show()
++---+---+-----+-----+---+
+|dno|eid|ename|  sal|sex|
++---+---+-----+-----+---+
+| 11|101|Ajith|10000|  m|
+| 12|102|Rahul|20000|  f|
+| 12|103| sony|30000|  m|
+| 13|104| sita|40000|  f|
+| 11|105| John|50000|  m|
++---+---+-----+-----+---+
+
+-----------------------------------------------------------------------------------------------
+
+
+-----------------------------------------------------------------------------------------------
+19) to change schema or the column name
+    eid--->ecode
+    sal -->income
+    sex -->gender
+>>> emps1=emps.toDF('ecode','ename','income','gender','dno')
+>>> emps1.show()
++-----+-----+------+------+---+
+|ecode|ename|income|gender|dno|
++-----+-----+------+------+---+
+|   11|  101|miller| 10000|  m|
+|   12|  102| Blake| 20000|  f|
+|   12|  103|  sony| 30000|  m|
+|   13|  104|  sita| 40000|  f|
+|   11|  105|  John| 50000|  m|
++-----+-----+------+------+---+
+
+--------------------------------------------------------------------------------------------
+20)withColumnRenamed(existing,new): renaming a particular column
+>>> emps.withColumnRenamed("ename","empname").show()
++---+---+-------+-----+---+
+|dno|eid|empname|  sal|sex|
++---+---+-------+-----+---+
+| 11|101| miller|10000|  m|
+| 12|102|  Blake|20000|  f|
+| 12|103|   sony|30000|  m|
+| 13|104|   sita|40000|  f|
+| 11|105|   John|50000|  m|
++---+---+-------+-----+---+
+
+-----------------------------------------------------------------------------------------------
+21)withColumn():Adding a new column
+
+>>> emps.withColumn('tax',emps.sal-2000).show()
++---+---+------+-----+---+-----+
+|dno|eid| ename|  sal|sex|  tax|
++---+---+------+-----+---+-----+
+| 11|101|miller|10000|  m| 8000|
+| 12|102| Blake|20000|  f|18000|
+| 12|103|  sony|30000|  m|28000|
+| 13|104|  sita|40000|  f|38000|
+| 11|105|  John|50000|  m|48000|
++---+---+------+-----+---+-----+
+
+----------------------------------------------------------------------------------------------
+22)toJSON()
+>>> emps.toJSON().collect()
+[u'{"dno":11,"eid":101,"ename":"miller","sal":10000,"sex":"m"}', u'{"dno":12,"eid":102,"ename":"Blake","sal":20000,"sex":"f"}', u'{"dno":12,"eid":103,"ename":"sony","sal":30000,"sex":"m"}', u'{"dno":13,"eid":104,"ename":"sita","sal":40000,"sex":"f"}', u'{"dno":11,"eid":105,"ename":"John","sal":50000,"sex":"m"}']
+>>> 
+
+----------------------------------------------------------------------------------------------
+23)toLocalIterator(): returns local python  iterator object such as list,tuple,set,dict
+
+>>> l1=list(emps.toLocalIterator())
+>>> print(l1)
+[Row(dno=11, eid=101, ename=u'miller', sal=10000, sex=u'm'), Row(dno=12, eid=102, ename=u'Blake', sal=20000, sex=u'f'), Row(dno=12, eid=103, ename=u'sony', sal=30000, sex=u'm'), Row(dno=13, eid=104, ename=u'sita', sal=40000, sex=u'f'), Row(dno=11, eid=105, ename=u'John', sal=50000, sex=u'm')]
+
+-----------------------------------------------------------------------------------------------
+24)groupBy():
+>>> #select sex,count(*) from emp group by sex
+... 
+>>> res1=emps.groupBy("sex").count()
+>>> res1.show()
++---+-----+
+|sex|count|
++---+-----+
+|  m|    3|
+|  f|    2|
++---+-----+
+
+-----------------------------------------------------------------------------------------------
+25)Aggregated functions:
+i)agg()
+ii)sum()
+iii)max()
+iv)min()
+v)avg()
+vi)count()
+
+case1: Single grouping and single aggregation
+o/p:   m --->count
+       f --->count
+
+>>> emps.groupBy("sex").count().show()
++---+-----+
+|sex|count|
++---+-----+
+|  m|    3|
+|  f|    2|
++---+-----+
+
+ii)sum aggregation
+ m --->totsal
+ f --->totsal
+>>> emps.groupBy("sex").sum("sal").show()
++---+--------+
+|sex|sum(sal)|
++---+--------+
+|  m|   90000|
+|  f|   60000|
++---+--------+
+-------------------------------------------------------
+iii)avg
+
+>>> emps.groupBy("sex").avg("sal").show()
+
++---+--------+
+|sex|avg(sal)|
++---+--------+
+|  m| 30000.0|
+|  f| 30000.0|
++---+--------+
+
+-----------------------------------------------------------
+iv) max
+>>> emps.groupBy("dno").max("sal").show()
++---+--------+
+|dno|max(sal)|
++---+--------+
+| 12|   30000|
+| 11|   50000|
+| 13|   40000|
++---+--------+
+
+
+v)min)
+>>> emps.groupBy("sex").min("sal").show()
++---+--------+
+|sex|min(sal)|
++---+--------+
+|  m|   10000|
+|  f|   20000|
++---+--------+
+
+-----------------------------------------------------------------------------------------------
+26) Multigroupings:
+>>> e1=emps.groupBy("dno","sex").sum("sal").show()
++---+---+--------+
+|dno|sex|sum(sal)|
++---+---+--------+
+| 12|  f|   20000|
+| 12|  m|   30000|
+| 13|  f|   40000|
+| 11|  m|   60000|
++---+---+--------+
+
+--------------------------------------------------------------------------------------------
+27)distinct(): eliminating the duplicates
+
+I want distinct dnos
+
+>>> dnos=emps.select("dno")
+>>> dnos.show()
++---+
+|dno|
++---+
+| 11|
+| 12|
+| 12|
+| 13|
+| 11|
++---+
+
+>>> res=dnos.distinct()
+>>> res.show()
++---+
+|dno|
++---+
+| 12|
+| 11|
+| 13|
++---+
+
+or
+>>> emps.select("dno").distinct().show()
++---+
+|dno|
++---+
+| 12|
+| 11|
+| 13|
++---+
+
+-----------------------------------------------------------------------------------------------
+28. union() : merging the rows of 2DFs
+              mergig DF should  have same schema
+
+#syntax: df1.union(df2)
+>>> emps.union(emps).show()
++---+---+------+-----+---+
+|dno|eid| ename|  sal|sex|
++---+---+------+-----+---+
+| 11|101|miller|10000|  m|
+| 12|102| Blake|20000|  f|
+| 12|103|  sony|30000|  m|
+| 13|104|  sita|40000|  f|
+| 11|105|  John|50000|  m|
+| 11|101|miller|10000|  m|
+| 12|102| Blake|20000|  f|
+| 12|103|  sony|30000|  m|
+| 13|104|  sita|40000|  f|
+| 11|105|  John|50000|  m|
++---+---+------+-----+---+
+
+-----------------------------------------------------------------------------------------------
+29.intersect(): The common rows will be returned
+
+The DFS should have the same schema
+
+>>> emps.intersect(emps).show()
+
++---+---+------+-----+---+
+|dno|eid| ename|  sal|sex|
++---+---+------+-----+---+
+| 12|103|  sony|30000|  m|
+| 11|101|miller|10000|  m|
+| 12|102| Blake|20000|  f|
+| 13|104|  sita|40000|  f|
+| 11|105|  John|50000|  m|
++---+---+------+-----+---+
+--------------------------------------------------------------------------------------------------------
+30. Converting a DF to a RDD
+
+>>> rdd1=emps.rdd
+
+----------------------------------------------------------------------------------------------
+31. joins:
+
+Joins : used to collect data from two or more datasets
+
+Horizontal Merging: Merging cols horizontally
+
+ex:Joins
+
+There are 2 types of JOINs
+1)Inner Join
+2)Outer Join : 3 types
+              i)Left Outer Join
+             ii)Right Outer Join
+             iii)Full outer Join
+
+ex:1
+
+ex: 
+     A=1   B=1
+       2     2
+       3     3
+       4     7
+       5     8
+       6     9
+
+1)Inner Join : Only Matching fields
+o/p:
+      (1,1)
+      (2,2)
+      (3,3)
+
+2)Left Outer Join :Matchings + unmatched fields of left side i.e Total presence of
+                                                                 left side
+       
+      (1,1)
+      (2,2)
+      (3,3)  matchings +
+      (4, )  unmatched of left side
+      (5, )
+      (6, )
+2)Right Outer Join :Matchings + unmatched fields of rightt side i.e Total presence of
+                                                                 right side
+       
+      (1,1)
+      (2,2)
+      (3,3)  matchings +
+      ( ,7)  unmatched of right side
+      ( ,8)
+      ( ,9)
+2)Full Outer Join :Matchings + unmatched fields of left side +
+                  unmatched fields of right side                                      
+       
+      (1,1)
+      (2,2)
+      (3,3)  matchings +
+      (4, )  unmatched of left side
+      (5, )
+      (6, )
+      ( ,7)  unmatched of right side
+      ( ,8)
+      ( ,9)
+
+ex:
+hadoop@ubuntu:~$ hdfs dfs -cat /sparklab/emps1
+101,aaa,1000,m,11
+102,bbb,2000,f,12
+103,ccc,3000,m,12
+104,ddd,4000,f,13
+105,eee,5000,m,11
+106,fff,6000,f,14
+107,ggg,7000,m,15
+108,hhh,8000,f,16hdfs dfs -cat /sparklab/dept1
+11,mrkt,hyd
+12,HR,delhi
+13,fin,pune
+17,HR,hyd
+18,fin,pune
+19,mrkt,delhi
+
+
+>>>r1=sc.textFile("hdfs://localhost:9000/sparklab/emps1")
+>>> r1.collect()
+[Stage 0:>                                                          (0 + 1) /                                                                               [u'101,aaa,1000,m,11', u'102,bbb,2000,f,12', u'103,ccc,3000,m,12', u'104,ddd,4000,f,13', u'105,eee,5000,m,11', u'106,fff,6000,f,14', u'107,ggg,7000,m,15', u'108,hhh,8000,f,16']
+>>> r2=r1.map(lambda x:x.split(','))
+>>> from pyspark.sql import Row
+>>> r3=r2.map(lambda x:Row(eid=int(x[0]),ename=x[1],sal=int(x[2]),sex=x[3],dno=int(x[4])))
+>>> r3.collect()
+[Stage 1:>                                                          (0 + 1) /                                                                               [Row(dno=11, eid=101, ename=u'aaa', sal=1000, sex=u'm'), Row(dno=12, eid=102, ename=u'bbb', sal=2000, sex=u'f'), Row(dno=12, eid=103, ename=u'ccc', sal=3000, sex=u'm'), Row(dno=13, eid=104, ename=u'ddd', sal=4000, sex=u'f'), Row(dno=11, eid=105, ename=u'eee', sal=5000, sex=u'm'), Row(dno=14, eid=106, ename=u'fff', sal=6000, sex=u'f'), Row(dno=15, eid=107, ename=u'ggg', sal=7000, sex=u'm'), Row(dno=16, eid=108, ename=u'hhh', sal=8000, sex=u'f')]
+>>> emps1=spark.createDataFrame(r3)
+2022-06-11 05:52:09 WARN  ObjectStore:568 - Failed to get database global_temp, returning NoSuchObjectException
+em>>> emps1.show()
++---+---+-----+----+---+
+|dno|eid|ename| sal|sex|
++---+---+-----+----+---+
+| 11|101|  aaa|1000|  m|
+| 12|102|  bbb|2000|  f|
+| 12|103|  ccc|3000|  m|
+| 13|104|  ddd|4000|  f|
+| 11|105|  eee|5000|  m|
+| 14|106|  fff|6000|  f|
+| 15|107|  ggg|7000|  m|
+| 16|108|  hhh|8000|  f|
++---+---+-----+----+---+
+
+>>> rr1=sc.textFile("hdfs://localhost:9000/sparklab/dept1")
+>>> rr1.collect()
+[u'11,mrkt,hyd', u'12,HR,delhi', u'13,fin,pune', u'17,HR,hyd', u'18,fin,pune', u'19,mrkt,delhi']
+>>> rr2=rr1.map(lambda x:x.split(","))
+>>> rr2.collect()
+[[u'11', u'mrkt', u'hyd'], [u'12', u'HR', u'delhi'], [u'13', u'fin', u'pune'], [u'17', u'HR', u'hyd'], [u'18', u'fin', u'pune'], [u'19', u'mrkt', u'delhi']]
+>>> rr3=rr2.map(lambda x:Row(dno=int(x[0]),dname=x[1],city=x[2]))
+>>> rr3.collect()
+[Row(city=u'hyd', dname=u'mrkt', dno=11), Row(city=u'delhi', dname=u'HR', dno=12), Row(city=u'pune', dname=u'fin', dno=13), Row(city=u'hyd', dname=u'HR', dno=17), Row(city=u'pune', dname=u'fin', dno=18), Row(city=u'delhi', dname=u'mrkt', dno=19)]
+>>> dept1=spark.createDataFrame(rr3)
+>>> dept1.show()
++-----+-----+---+
+| city|dname|dno|
++-----+-----+---+
+|  hyd| mrkt| 11|
+|delhi|   HR| 12|
+| pune|  fin| 13|
+|  hyd|   HR| 17|
+| pune|  fin| 18|
+|delhi| mrkt| 19|
++-----+-----+---+
+
+syntax of join
+df1.join(df2,joining condition,'type of join')
+
+types:
+1.inner
+2.outer
+3.left_outer
+4.right_outer
+5.full_outer
+
+>>> ij=emps1.join(dept1,emps1.dno==dept1.dno,'inner').select(emps1.ename,emps1.eid,emps1.sal,emps1.sex,emps1.dno,dept1.dname,dept1.city)
+>>> ij.show()
+
+o/p:
++-----+---+----+---+---+-----+-----+
+|ename|eid| sal|sex|dno|dname| city|
++-----+---+----+---+---+-----+-----+
+|  bbb|102|2000|  f| 12|   HR|delhi|
+|  ccc|103|3000|  m| 12|   HR|delhi|
+|  aaa|101|1000|  m| 11| mrkt|  hyd|
+|  eee|105|5000|  m| 11| mrkt|  hyd|
+|  ddd|104|4000|  f| 13|  fin| pune|
++-----+---+----+---+---+-----+-----+
+
+2)leftouter join:
+>>> loj=emps1.join(dept1,emps1.dno==dept1.dno,'left_outer').select(emps1.ename,emps1.eid,emps1.sal,emps1.sex,emps1.dno,dept1.dname,dept1.cit
+
+
++-----+---+----+---+---+-----+-----+
+|ename|eid| sal|sex|dno|dname| city|
++-----+---+----+---+---+-----+-----+
+|  bbb|102|2000|  f| 12|   HR|delhi|
+|  ccc|103|3000|  m| 12|   HR|delhi|
+|  aaa|101|1000|  m| 11| mrkt|  hyd|
+|  eee|105|5000|  m| 11| mrkt|  hyd|
+|  ddd|104|4000|  f| 13|  fin| pune|
+|  fff|106|6000|  f| 14| null| null|
+|  ggg|107|7000|  m| 15| null| null|
+|  hhh|108|8000|  f| 16| null| null|
++-----+---+----+---+---+-----+-----+
+
+3)Right outer join:
+>>> roj=emps1.join(dept1,emps1.dno==dept1.dno,'right_outer').select(emps1.ename,emps1.eid,emps1.sal,emps1.sex,emps1.dno,dept1.dname,dept1.city)
+>>> roj.show()
+
++-----+----+----+----+----+-----+-----+
+|ename| eid| sal| sex| dno|dname| city|
++-----+----+----+----+----+-----+-----+
+| null|null|null|null|null| mrkt|delhi|
+| null|null|null|null|null|   HR|  hyd|
+|  bbb| 102|2000|   f|  12|   HR|delhi|
+|  ccc| 103|3000|   m|  12|   HR|delhi|
+|  aaa| 101|1000|   m|  11| mrkt|  hyd|
+|  eee| 105|5000|   m|  11| mrkt|  hyd|
+|  ddd| 104|4000|   f|  13|  fin| pune|
+| null|null|null|null|null|  fin| pune|
++-----+----+----+----+----+-----+-----+
+
+----------------------------------------------------------------------------------------------
+4)full outer join:
+
+>>> foj=emps1.join(dept1,emps1.dno==dept1.dno,'full_outer').select(emps1.ename,emps1.eid,emps1.sal,emps1.sex,emps1.dno,dept1.dname,dept1.city)
+>>> foj.show()
+
++-----+----+----+----+----+-----+-----+
+|ename| eid| sal| sex| dno|dname| city|
++-----+----+----+----+----+-----+-----+
+| null|null|null|null|null| mrkt|delhi|
+| null|null|null|null|null|   HR|  hyd|
+|  bbb| 102|2000|   f|  12|   HR|delhi|
+|  ccc| 103|3000|   m|  12|   HR|delhi|
+|  aaa| 101|1000|   m|  11| mrkt|  hyd|
+|  eee| 105|5000|   m|  11| mrkt|  hyd|
+|  ddd| 104|4000|   f|  13|  fin| pune|
+| null|null|null|null|null|  fin| pune|
+|  fff| 106|6000|   f|  14| null| null|
+|  ggg| 107|7000|   m|  15| null| null|
+|  hhh| 108|8000|   f|  16| null| null|
++-----+----+----+----+----+-----+-----+
+
+----------------------------------------------------------------------------------------------
+31)eliminating the records with null values
+
+>>>foj.dropna().show()
++-----+---+----+---+---+-----+-----+
+|ename|eid| sal|sex|dno|dname| city|
++-----+---+----+---+---+-----+-----+
+|  bbb|102|2000|  f| 12|   HR|delhi|
+|  ccc|103|3000|  m| 12|   HR|delhi|
+|  aaa|101|1000|  m| 11| mrkt|  hyd|
+|  eee|105|5000|  m| 11| mrkt|  hyd|
+|  ddd|104|4000|  f| 13|  fin| pune|
++-----+---+----+---+---+-----+-----+
+-----------------------------------------------------------------------------------------------
+32)replacing the nulls with zero
+
+>>>foj.na.fill(0).show()
+o/p:
++-----+---+----+----+---+-----+-----+
+|ename|eid| sal| sex|dno|dname| city|
++-----+---+----+----+---+-----+-----+
+| null|  0|   0|null|  0| mrkt|delhi|
+| null|  0|   0|null|  0|   HR|  hyd|
+|  bbb|102|2000|   f| 12|   HR|delhi|
+|  ccc|103|3000|   m| 12|   HR|delhi|
+|  aaa|101|1000|   m| 11| mrkt|  hyd|
+|  eee|105|5000|   m| 11| mrkt|  hyd|
+|  ddd|104|4000|   f| 13|  fin| pune|
+| null|  0|   0|null|  0|  fin| pune|
+|  fff|106|6000|   f| 14| null| null|
+|  ggg|107|7000|   m| 15| null| null|
+|  hhh|108|8000|   f| 16| null| null|
++-----+---+----+----+---+-----+-----+
+ii)
+>>> foj.na.fill({'ename':'unknown','eid':000,'sal':000,'sex':'unknown','dno':00,'dname':'unknown','city':'unknown'}).show()
+
+o/p:
++-------+---+----+-------+---+-------+-------+
+|  ename|eid| sal|    sex|dno|  dname|   city|
++-------+---+----+-------+---+-------+-------+
+|unknown|  0|   0|unknown|  0|   mrkt|  delhi|
+|unknown|  0|   0|unknown|  0|     HR|    hyd|
+|    bbb|102|2000|      f| 12|     HR|  delhi|
+|    ccc|103|3000|      m| 12|     HR|  delhi|
+|    aaa|101|1000|      m| 11|   mrkt|    hyd|
+|    eee|105|5000|      m| 11|   mrkt|    hyd|
+|    ddd|104|4000|      f| 13|    fin|   pune|
+|unknown|  0|   0|unknown|  0|    fin|   pune|
+|    fff|106|6000|      f| 14|unknown|unknown|
+|    ggg|107|7000|      m| 15|unknown|unknown|
+|    hhh|108|8000|      f| 16|unknown|unknown|
++-------+---+----+-------+---+-------+-------+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

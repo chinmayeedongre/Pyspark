@@ -1,0 +1,314 @@
+Filters:
+
+ex:1
+>>> x=[10,20,30,40,50]
+>>> y=sc.parallelize(x)
+>>> z=y.filter(lambda a:a>=30)
+>>> z.collect()
+[30, 40, 50]
+
+ex:2
+>>> Gender=["m","f","f","m","m"]
+>>> Gender1=sc.parallelize(Gender)
+>>> males=Gender1.filter(lambda x:x=="m")
+>>> males.collect()
+['m', 'm', 'm']
+
+ex:3 Given List of words,check the word count
+
+>>> words=["hadoop","spark","Java","Python","hadoop","spark","Python"]
+>>> #This data is not ready for grouping actitvity, for grouping or to
+
+>>> #apply reduceBykey,we want (k,v) pair.
+... 
+>>> words1=sc.parallelize(words)
+>>> pair=words1.map(lambda x:(x,1))
+>>> pair.collect()
+[('hadoop', 1), ('spark', 1), ('Java', 1), ('Python', 1), ('hadoop', 1), ('spark', 1), ('Python', 1)]
+>>> res=pair.reduceByKey(lambda x,y:x+y)
+>>> res.collect()
+[('Python', 2), ('spark', 2), ('Java', 1), ('hadoop', 2)]
+
+#----------------------------------------------------------------------------------------------
+ex: I want only male emp records
+
+>>> emp=[[101,'ajay',10000,'m',11],[102,'amala',20000,'f',12],[103,'sanjay',30000,'m',13],[104,'sita',40000,'f',13],[105,'priya',50000,'f',12]]
+>>> emp1=sc.parallelize(emp)
+>>> malerecords=emp1.filter(lambda x:x[3]=="m")
+>>> malerecords.collect()
+[[101, 'ajay', 10000, 'm', 11], [103, 'sanjay', 30000, 'm', 13]]
+
+#---------------------------------------------------------------------------------------------
+
+Filtering nulls or Blankspaces
+
+>>> line="         spark is for processing               "
+>>> words=line.split(" ")
+>>> print(words)
+['', '', '', '', '', '', '', '', '', 'spark', 'is', 'for', 'processing', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '']
+>>> words1=sc.parallelize(words)
+>>> words2=words1.filter(lambda x:x!='')
+>>> words2.collect()
+['spark', 'is', 'for', 'processing']
+
+----------------------------------------------------------------------------------------------
+Functions in Python
+
+Filtering nulls or Blankspaces(above one) using functions.
+
+>>> line="         spark is for processing               "
+>>> def eliminatenulls(x):
+...   w=x.split(" ")
+...   words1=sc.parallelize(w)
+...   words2=words1.filter(lambda x:x!="")
+...   return words2
+... 
+>>> y=eliminatenulls(line)
+>>> y.collect()
+['spark', 'is', 'for', 'processing']
+>>> z=y.collect()
+>>> str=""
+>>> for p in z:
+...   str=str+p+" "
+... 
+>>> print(str)
+spark is for processing 
+
+-----------------------------------------------------------------------------------------------
+Task:
+ -Extract (k,v) pairs from the employee data with or without functions
+
+ex:
+o/p dnowise totsal
+
+select dno,sum(sal) from emp group by dno
+1.Without functions
+>>> emp=[[101,'ajay',10000,'m',11],[102,'amala',20000,'f',12],[103,'sanjay',30000,'m',13],[104,'sita',40000,'f',13],[105,'priya',50000,'f',12]]
+>>> emp1=sc.parallelize(emp)
+>>> emp1.collect()
+[[101, 'ajay', 10000, 'm', 11], [102, 'amala', 20000, 'f', 12], [103, 'sanjay', 30000, 'm', 13], [104, 'sita', 40000, 'f', 13], [105, 'priya', 50000, 'f', 12]]
+
+>>> #creating (dno,sal) pair
+... 
+>>> pair=emp1.map(lambda x:(x[4],x[2]))
+>>> pair.collect()
+[(11, 10000), (12, 20000), (13, 30000), (13, 40000), (12, 50000)]
+>>> res=pair.reduceByKey(lambda x,y:x+y)
+>>> res.collect()
+[(11, 10000), (12, 70000), (13, 70000)]
+
+---------------------------------------------------------------------------------------------
+using functions extracting (dno,sal) pair
+
+>>> def makepair(x):
+...   words=x.split(",")
+...   dno=words[4]
+...   sal=int(words[2])
+...   return(dno,sal)
+... 
+>>> pair=makepair("101,Ajay,70000,m,11"
+... 
+... 
+... )
+>>> print(pair)
+('11', 70000)
+>>> //now applying to group of records
+  File "<stdin>", line 1
+    //now applying to group of records
+     ^
+SyntaxError: invalid syntax
+>>> #now applying to group of records
+... 
+>>> r1=sc.textFile("hdfs://localhost:9000/sparklab/emp")
+>>> r1.collect()
+[Stage 10:>                                                         (0 + 1) /                                                                               [u'101,miller,10000,m,11', u'102,Blake,20000,f,12', u'103,sony,30000,m,12', u'104,sita,40000,f,13', u'105,John,50000,m,11']
+>>> pair1=r1.map(lambda x:makepair(x))
+>>> pair1.collect()
+[(u'11', 10000), (u'12', 20000), (u'12', 30000), (u'13', 40000), (u'11', 50000)]
+>>> res=pair1.reduceByKey(lambda x,y:x+y)
+>>> res.collect()
+[(u'11', 60000), (u'13', 40000), (u'12', 50000)]
+
+----------------------------------------------------------------------------------------------
+Groupings and Aggregations
+
+1.Singe grouping ans Single aggregation
+ ex:  select dno,sum(sal) from emp group by dno
+
+2.Multi grouping and single aggregation
+  ex:select dno,sex,sum(Sal) from emp group by dno,sex
+
+Step 1: Loading a  file
+
+>>> r1=sc.textFile("hdfs://localhost:9000/sparklab/emp")
+>>> r1.collect()
+[Stage 10:>                                                         (0 + 1) /                                                                               [u'101,miller,10000,m,11', u'102,Blake,20000,f,12', u'103,sony,30000,m,12', u'104,sita,40000,f,13', u'105,John,50000,m,11']
+>>> pair1=r1.map(lambda x:makepair(x))
+>>> pair1.collect()
+[(u'11', 10000), (u'12', 20000), (u'12', 30000), (u'13', 40000), (u'11', 50000)]
+>>> res=pair1.reduceByKey(lambda x,y:x+y)
+>>> res.collect()
+[(u'11', 60000), (u'13', 40000), (u'12', 50000)]
+>>> 
+>>> r1=sc.textFile("hdfs://localhost:9000/sparklab/emp")
+
+
+>>> #step 2: Splitting based on delimiter
+... 
+>>> r2=r1.map(lambda x:x.split(","))
+>>> r2.collect()
+[[u'101', u'miller', u'10000', u'm', u'11'], [u'102', u'Blake', u'20000', u'f', u'12'], [u'103', u'sony', u'30000', u'm', u'12'], [u'104', u'sita', u'40000', u'f', u'13'], [u'105', u'John', u'50000', u'm', u'11']]
+>>> r2.persist()
+PythonRDD[23] at collect at <stdin>:1
+>>> #step 3: Extracting the required fields and make pair RDD
+... 
+>>> dnosexsalpair=r2.map(lambda x:((int(x[4]),x[3]),int(x[2])))
+>>> dnosexsalpair.collect()
+[((11, u'm'), 10000), ((12, u'f'), 20000), ((12, u'm'), 30000), ((13, u'f'), 40000), ((11, u'm'), 50000)]
+>>> #or we can extract through function
+... 
+>>> def dnosexsal(x):
+...   dno=int(x[4])
+...   sex=x[3]
+...   sal=int(x[2])
+...   pair=((dno,sex),sal)
+...   return pair
+... 
+>>> dnosexsalpair1=r2.map(lambda x:dnosexsal(x))
+>>> dnosexsalpair1.collect()
+[((11, u'm'), 10000), ((12, u'f'), 20000), ((12, u'm'), 30000), ((13, u'f'), 40000), ((11, u'm'), 50000)]
+>>> #step 4: performing sum aggregation using reduceByKey()
+... 
+>>> sum=dnosexsalpair.reduceByKey(lambda x,y:x+y)
+>>> sum.collect()
+[((12, u'f'), 20000), ((13, u'f'), 40000), ((11, u'm'), 60000), ((12, u'm'), 30000)]
+>>> 
+
+----------------------------------------------------------------------------------------------
+3)Single Grouping and Multiple Aggregations:
+
+Query : select dno,sum(sal),avg(sal),max(sal),min(sal),count(*) from emp group by dno
+
+step 1: Loading a file
+>>> r1=sc.textFile("hdfs://localhost:9000/sparklab/emp")
+>>> r1.collect()
+[Stage 0:>                                                          (0 + 1) /                                                                               [u'101,miller,10000,m,11', u'102,Blake,20000,f,12', u'103,sony,30000,m,12', u'104,sita,40000,f,13', u'105,John,50000,m,11']
+>>> #step2: splitting based on delimiter
+... 
+>>> r2=r1.map(lambda x:x.split(",")
+... )
+>>> r2.collect()
+[[u'101', u'miller', u'10000', u'm', u'11'], [u'102', u'Blake', u'20000', u'f', u'12'], [u'103', u'sony', u'30000', u'm', u'12'], [u'104', u'sita', u'40000', u'f', u'13'], [u'105', u'John', u'50000', u'm', u'11']]
+>>> //step3: Extracting thr required fields
+  File "<stdin>", line 1
+    //step3: Extracting thr required fields
+     ^
+SyntaxError: invalid syntax
+>>> #step3: Extracting the required fields in (key,value)
+... 
+>>> dnosalpair=r2.map(lambda x:(int(x[4]),int(x[2])))
+>>> dnosalpair.collect
+<bound method PipelinedRDD.collect of PythonRDD[5] at RDD at PythonRDD.scala:48>
+>>> dnosalpair.collect()
+[(11, 10000), (12, 20000), (12, 30000), (13, 40000), (11, 50000)]
+>>> #Step 4: for multiple Aggregations we use groupByKey() and we get compact
+... Buffer in scala,but here in python,we get iterable object, convert that into list
+    and access and peform aggregations
+
+>>> grp=dnosalpair.groupByKey()
+>>> grp.collect()
+[Stage 3:>                                                          (0 + 1) / [Stage 3:===========================================================(1 + 0) /                                                                               [(11, <pyspark.resultiterable.ResultIterable object at 0x7f2fa6e6e7d0>), (12, <pyspark.resultiterable.ResultIterable object at 0x7f2fa6e6eed0>), (13, <pyspark.resultiterable.ResultIterable object at 0x7f2fa6e82810>)]
+>>> #converting iterable object into list
+... 
+>>> grp1=grp.map(lambda x:(x[0],list(x[1])))
+>>> grp1.collect()
+[(11, [10000, 50000]), (12, [20000, 30000]), (13, [40000])]
+>>> //or within a signle line
+  File "<stdin>", line 1
+    //or within a signle line
+     ^
+SyntaxError: invalid syntax
+>>> #or within a signle line
+... 
+>>> grp1=dnosalpair.groupByKey().map(lambda x:(x[0],list(x[1])))
+>>> grp1.collect()
+[(11, [10000, 50000]), (12, [20000, 30000]), (13, [40000])]
+>>> #step 5: performing multiple Aggregations by defining a function
+... 
+>>> def extract(x):
+...   dno=x[0]
+...   y=x[1]
+...   sum1=sum(y)
+...   max1=max(y)
+...   min1=min(y)
+...   cnt=len(y)
+...   avg=sum1/cnt
+...   res=(dno,sum1,max1,min1,cnt,avg)
+...   return res
+... 
+>>> aggr=grp1.map(lambda x:extract(x))
+>>> aggr.collect()
+[(11, 60000, 50000, 10000, 2, 30000), (12, 50000, 30000, 20000, 2, 25000), (13, 40000, 40000, 40000, 1, 40000)]
+
+------------------------------------------------------------------------------------------------
+case 4: Multi Grouping and multiple Aggregations
+
+Multi Grouping and multiple Aggregations
+
+select dno,sex,sum(sal),avg(sal),max(Sal),min(sal),count(*) from emp group by dno,sex
+
+>>> #step 1: Loading file
+... 
+>>> emp=sc.textFile("hdfs://localhost:9000/sparklab/emp")
+>>> emp.collect()
+[u'101,miller,10000,m,11', u'102,Blake,20000,f,12', u'103,sony,30000,m,12', u'104,sita,40000,f,13', u'105,John,50000,m,11']
+>>> #Step 2: splitting based on delimiter
+... 
+>>> emplist=emp.map(lambda x:x.split(","))
+>>> emplist.collect()
+[[u'101', u'miller', u'10000', u'm', u'11'], [u'102', u'Blake', u'20000', u'f', u'12'], [u'103', u'sony', u'30000', u'm', u'12'], [u'104', u'sita', u'40000', u'f', u'13'], [u'105', u'John', u'50000', u'm', u'11']]
+>>> #step 3: Extracting the required fields--->(dno,sex)as key and sal as val
+... 
+>>> dnosexsalpair=emplist.map(lambda x:((int(x[4],x[3]),int(x[2])))
+... 
+... )
+>>> dnosexsalpair=emplist.map(lambda x:((int(x[4]),x[3]),int(x[2])))
+>>> dnosexsalpair.collect()
+[((11, u'm'), 10000), ((12, u'f'), 20000), ((12, u'm'), 30000), ((13, u'f'), 40000), ((11, u'm'), 50000)]
+
+>>> grp=dnosexsalpair.groupByKey().map(lambda x:(x[0],list(x[1])))
+>>> grp.collect()
+[((12, u'f'), [20000]), ((13, u'f'), [40000]), ((11, u'm'), [10000, 50000]), ((12, u'm'), [30000])]
+
+>>> #step 5: Performing multiple aggregations by defining a function
+... 
+>>> def extract(x):
+...   dno=x[0][0]
+...   sex=x[0][1]
+...   y=x[1]
+...   sum1=sum(y)
+...   max1=max(y)
+...   min1=min(y)
+...   cnt=len(y)
+...   avg=sum1/cnt
+...   res=(dno,sex,sum1,max1,min1,cnt,avg)
+...   return res
+... 
+>>> aggr=grp.map(lambda x:extract(x))
+>>> aggr.collect()
+[(12, u'f', 20000, 20000, 20000, 1, 20000), (13, u'f', 40000, 40000, 40000, 1, 40000), (11, u'm', 60000, 50000, 10000, 2, 30000), (12, u'm', 30000, 30000, 30000, 1, 30000)]
+>>> 
+
+
+
+
+
+
+
+
+
+
+
+
+
+

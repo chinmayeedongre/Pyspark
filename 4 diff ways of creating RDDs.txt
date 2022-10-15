@@ -1,0 +1,41 @@
+
+Different ways of creating RDDs
+
+1.whenever we load a hdfsfile/LFSfile using sparkcontext then  RDD is created
+
+2.when we perform Transformation on a RDD--->then the resultant is also a RDD
+
+3.If we parallelize a pyNotepad
+-->then a RDD is created.
+
+
+1)increasing the no of partitions:2 ways
+1.while loading the file,we need to specify the no of partitions we want
+2.while parallelizing ,we need to specify the no of partitions we want
+
+>>> r1=sc.textFile("hdfs://localhost:9000/sparklab/emp")
+>>> r1.getNumPartitions()
+1
+>>> //To increase the no of partitions then'
+  File "<stdin>", line 1
+    //To increase the no of partitions then'
+     ^
+SyntaxError: invalid syntax
+>>> #To increase the no of partitions then'
+... 
+>>> r2=sc.textFile("hdfs://localhost:9000/sparklab/emp",3)
+>>> r2.getNumPartitions()
+3
+>>> #II way to increase using parallelize
+... 
+>>> x=[10,20,30]
+>>> y=sc.parallelize(x)
+>>> y.getNumPartitions()
+1
+>>> y.getNumPartitions(x,3)
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+TypeError: getNumPartitions() takes exactly 1 argument (3 given)
+>>> y=sc.parallelize(x,3)
+>>> y.getNumPartitions()
+

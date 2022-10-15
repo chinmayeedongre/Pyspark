@@ -1,0 +1,542 @@
+RDD operations: 2operations can be performed on a RDD
+             1.Transformations 
+             2.Actions
+
+if Transformations applied on a RDD---------->resulatant also is a RDD(spark object)
+if actions applied on a RDD ----------------->resultant is a local object-->python object
+
+
+whenever we parallelize a python object------>we get a spark object(RDD)
+
+>>> x=[10,20,30,40,50]
+>>> rdd1=sc.parallelize(x)
+>>> rdd1.collect()
+o/p:
+[10, 20, 30, 40, 50]
+
+Various Transformations:
+-----------------------
+1.map()
+2.flatMap()
+3.filter()
+4.union()
+5.intersection()
+6.substract()
+7.cartesian()
+8.distinct()
+
+1.map (): each element Transformation
+          Applying operation to each element of RDD and returns a RDD
+
+ex: squaring each element of a RDD
+
+>>> r1=sc.parallelize([10,20,30,40,50])
+>>> r2=r1.map(lambda x:x*x)
+>>> r2.collect()
+[100, 400, 900, 1600, 2500]
+
+-----------------------------------------------------------------------------
+2.flatMap(): Flattens the elements of list or tuple
+
+>>> x=[[10,20,30],[40,50,60]]
+>>> y=sc.parallelize(x)      #here y is a RDD
+>>> z=y.flatMap(lambda x:x)  #here z is also a RDD (
+>>> z.collect()
+[10, 20, 30, 40, 50, 60]
+
+ex:2
+>>> x=[[1,2,3],[4,5,6],[7,8,9]]
+>>> y=sc.parallelize(x)
+>>> z=y.flatMap(lambda x:x)
+>>> z.collect()
+[1, 2, 3, 4, 5, 6, 7, 8, 9]
+
+>>> type(x)
+<type 'list'>
+>>> type(y)
+<class 'pyspark.rdd.RDD'>
+>>> type(z)
+<class 'pyspark.rdd.PipelinedRDD'>
+>>> type(w)
+<type 'list'>
+
+
+Note   RDD2=RDD1.transformation()
+       list=RDD1.action()
+
+
+-----------------------------------------------------------------------------------------------
+3.filter: filters elements of a RDD based on condition and resulatant is also a RDD
+
+>>> a=[10,20,30,40,50,60,60,80,90]
+>>> b=sc.parallelize(a)
+>>> res=b.filter(lambda x:x>=30)
+>>> res2=res.collect()
+>>> print(res2)
+[30, 40, 50, 60, 60, 80, 90]
+
+#ex:2
+>>> a=["Java","Python","Devops","Spark","scala"]
+>>> b=sc.parallelize(a)
+>>> res=b.filter(lambda x:x!="Java")
+>>> res2=res.collect()
+>>> print(res2)
+['Python', 'Devops', 'Spark', 'scala']
+
+-----------------------------------------------------------------------------------------------
+4.union():combines elements of multiple RDDs
+          by default performs union all operation(allows duplicates)
+
+>>> r1=sc.parallelize([10,20,30,40,50])
+>>> r2=sc.parallelize([10,20,30,60,70])
+>>> res=r1.union(r2)
+>>> res2=res.collect()
+>>> print(res2)
+[10, 20, 30, 40, 50, 10, 20, 30, 60, 70]
+
+---------------------------------------------------------------------------------------------
+5.intersection: returns  only the common elements
+
+>>> res1=r1.intersection(r2)
+>>> res1.collect()
+o/p:
+[10, 20, 30]
+
+----------------------------------------------------------------------------------------------
+6.substract(): removes common elements from a RDD
+
+>>> res3=r1.subtract(r2)
+>>> res4=res3.collect()
+>>> print(res4)
+[40, 50]
+
+----------------------------------------------------------------------------------------------
+7.cartesian(): performs cartesisan product with other RDD
+
+>>> r1=sc.parallelize([1,2,3])
+>>> r2=sc.parallelize([4,5,6])
+>>> res4=r1.cartesian(r2)
+>>> res5=res4.collect()
+>>> print(res5)
+[(1, 4), (1, 5), (1, 6), (2, 4), (2, 5), (2, 6), (3, 4), (3, 5), (3, 6)]
+
+----------------------------------------------------------------------------------------------
+8.distinct(): Removes the duplicates
+
+>>> r1=sc.parallelize([10,20,30,40,10,20,30])
+>>> res6=r1.distinct()
+>>> res7=res6.collect()
+>>> print(res7)
+[40, 10, 20, 30]
+
+-----------------------------------------------------------------------------------------------
+9.Transformations on a pair RDD(k,v) pairs
+
+1.reduceByKey()
+2.groupByKey()
+3.sortByKey()
+4.mapValues()
+5.keys()
+6.values()
+7.join()
+8.leftOuterJoin()
+9.rightOuterJoin()
+10.fullOuterJoin()
+
+1)reduceByKey():sum up all the values with same key
+                reduceByKeycan be applied only on (k,v) pair
+
+>>> r1=sc.parallelize([(11,10000),(12,20000),(13,30000),(11,40000),(12,50000),(13,60000),(11,70000)])
+>>> res=r1.reduceByKey(lambda x,y:x+y)
+>>> res.collect()
+[Stage 0:>                                                          (0 + 0) / [Stage 0:>                                                          (0 + 1) / [Stage 0:===========================================================(1 + 0) /                                                                               [(11, 120000), (12, 70000), (13, 90000)]
+
+
+>>> #ex: 
+>>> r1=sc.parallelize([("kohli",40),("Rohith",60),("Rahul",20),("kohli",80),("Rohith",30),("Rahul",40)])
+>>> res=r1.reduceByKey(lambda x,y:x+y)
+>>> res.collect()
+[('kohli', 120), ('Rohith', 90), ('Rahul', 60)]
+
+
+>>> r1=sc.parallelize([("Ajay","25"),("Rahul","20"),("Amar","15"),("Ajay","30"),("Rahul","10"),("Amar","20")])
+>>> res=r1.reduceByKey(lambda x,y:x+y)
+>>> res.collect()
+[('Rahul', '2010'), ('Ajay', '2530'), ('Amar', '1520')]
+
+-----------------------------------------------------------------------------------------------
+2.groupByKey(): 
+
+>>> r1=sc.parallelize([(11,10000),(12,20000),(13,30000),(11,40000),(12,50000),(13,60000),(11,70000)])
+>>> res=r1.groupByKey()
+>>> res.collect()
+[(11, <pyspark.resultiterable.ResultIterable object at 0x7f66ffe09a50>),
+ (12, <pyspark.resultiterable.ResultIterable object at 0x7f66ffe093d0>), 
+(13, <pyspark.resultiterable.ResultIterable object at 0x7f66ffe09b50>)]
+
+here we got iterable object(compact buffer),convert that into list and access
+
+>>> res2=res.map(lambda x:(x[0],list(x[1]))
+... )
+>>> res2.collect()
+[(11, [10000, 40000, 70000]), (12, [20000, 50000]), (13, [30000, 60000])]
+>>> res3=res2.map(lambda x:(x[0],sum(x[1]),max(x[1]),min(x[1]),len(x[1]),sum(x[1])/len(x[1])))
+>>> res3.collect()
+[(11, 120000, 70000, 10000, 3, 40000), (12, 70000, 50000, 20000, 2, 35000), (13, 90000, 60000, 30000, 2, 45000)]
+
+-----------------------------------------------------------------------------------------------
+3)sortByKey(): sorting based on key
+
+>>> r1=sc.parallelize([(11,10000),(12,20000),(13,30000),(11,40000),(12,50000),(13,60000),(11,70000)])
+>>> res=r1.sortByKey()
+>>> res.collect()
+[(11, 10000), (11, 40000), (11, 70000), (12, 20000), (12, 50000), (13, 30000), (13, 60000)]
+
+----------------------------------------------------------------------------------------------
+4)mapValues() :Applying a functionality to each value,without changing the key
+
+>>> r1=sc.parallelize([(11,10000),(12,20000),(13,30000),(11,40000),(12,50000),(13,60000),(11,70000)])
+>>> res=r1.mapValues(lambda x:x+5000)
+>>> res.collect()
+[(11, 15000), (12, 25000), (13, 35000), (11, 45000), (12, 55000), (13, 65000), (11, 75000)]
+
+----------------------------------------------------------------------------------------------
+5)keys():returns the keys of RDDs
+>>> r1=sc.parallelize([(11,10000),(12,20000),(13,30000),(11,40000),(12,50000),(13,60000),(11,70000)])
+>>> res=r1.keys()
+>>> res.collect()
+[11, 12, 13, 11, 12, 13, 11]
+
+----------------------------------------------------------------------------------------------
+6)values(): returns the values of RDD
+>>> r1=sc.parallelize([(11,10000),(12,20000),(13,30000),(11,40000),(12,50000),(13,60000),(11,70000)])
+>>> res=r1.values()
+>>> res.collect()
+[10000, 20000, 30000, 40000, 50000, 60000, 70000]
+
+-----------------------------------------------------------------------------------------------
+7)join():
+
+>>> r1=sc.parallelize([(10,20),(30,40),(50,60)])
+>>> r2=sc.parallelize([(10,20),(30,40),(70,80)])
+>>> ij=r1.join(r2)
+>>> ij.collect()
+[(10, (20, 20)), (30, (40, 40))]
+
+
+>>> loj=r1.leftOuterJoin(r2)
+>>> loj.collect()
+[(10, (20, 20)), (50, (60, None)), (30, (40, 40))]
+
+
+>>> roj=r1.rightOuterJoin(r2)
+>>> roj.collect()
+[(10, (20, 20)), (70, (None, 80)), (30, (40, 40))]
+
+
+>>> foj=r1.fullOuterJoin(r2)
+>>> foj.collect()
+[(10, (20, 20)), (70, (None, 80)), (50, (60, None)), (30, (40, 40))]
+
+#---------------------------------------------------------------------------------------------
+Actions: Whenever action is performed ,the flow executes from it root RDD .
+
+The following are some of the actions
+
+1.Collect()
+2.count()
+3.countByValue()
+4.countByKey()
+5.take(num)
+6.top(num)
+7.first()
+8.reduce()
+9.sum()
+10.max()
+11.min()
+12.count()
+13.saveAsTextFile(path)
+
+1.collect(): It will collect all partitions data of different slave machines into 
+             client machine
+
+>>> x=[10,20,30,40,50,60]
+>>> r1=sc.parallelize(x)
+>>> r1.collect()
+[10, 20, 30, 40, 50, 60]
+
+---------------------------------------------------------------------------
+2.count():counts the no of elements in a RDD
+... 
+>>> r1.count()
+6
+
+---------------------------------------------------------------------------------
+3.countByValue(): counts no of times each value occurs in a RDD
+                  It returns a dictionary
+
+>>> medals=["IND","AUS","Eng","IND","Eng","AUS","IND","AUS"]
+>>> r1=sc.parallelize(medals)
+>>> r1.countByValue()
+defaultdict(<type 'int'>, {'IND': 3, 'AUS': 3, 'Eng': 2})
+>>> 
+
+-------------------------------------------------------------------------------------
+4.countByKey(): counts no of times each key had occured
+                we get o/p in the form of dictionary(key:value)
+                IT should be applied only on a paired RDD
+
+>>> sexsalpairs=[('m',20000),('f',10000),('m',30000),('f',40000),('m',500000)]
+>>> r1=sc.parallelize(sexsalpairs)
+>>> r1.countByKey()
+defaultdict(<type 'int'>, {'m': 3, 'f': 2})
+
+-------------------------------------------------------------------------------------------
+5.take(n): takes first 'n' elements of a RDD.
+
+>>> r1=sc.parallelize([10,20,30,40,50])
+>>> r1.take(3)
+[10, 20, 30]
+
+-------------------------------------------------------------------------------------------
+6.top(n): Takes top 'n' elements from a RDD
+
+>>> r1.top(3)
+[50, 40, 30]
+>>> 
+>>> 
+>>> sals=sc.parallelize([10000,20000,30000,40000,50000])
+>>> sals.take(2)
+[10000, 20000]
+>>> sals.top(2)
+[50000, 40000]
+
+
+>>> names=sc.parallelize(["Rohith","Blake","Ajay","Miller","James"])
+>>> names.take(2)
+['Rohith', 'Blake']
+>>> names.top(2)
+['Rohith', 'Miller']
+
+
+----------------------------------------------------------------------------------------------
+7.first() :takes 1st element of a RDD
+
+>>> names.first()
+'Rohith'
+
+>>> sals.first()
+10000
+----------------------------------------------------------------------------------------------
+8.reduce() :combines or sums elements of a RDD
+>>> x=[10,20,30,40,50]
+>>> r1=sc.parallelize(x)
+>>> r1.reduce(lambda x,y:x+y)
+150
+
+-----------------------------------------------------------------------------------------------
+9.sum(): finds the sum of RDD elements
+
+10.max() :finds max element of a RDD
+
+11.min() :finds the min element of a RDD
+
+12.count() :counts the no of elements in a RDD
+
+>>> x=[10,20,30,40,50]
+>>> r1=sc.parallelize(x)
+
+>>> r1.sum()
+150
+>>> r1.max()
+50
+>>> r1.min()
+10
+>>> r1.count()
+5
+>>> r1.sum()/r1.count()
+30
+----------------------------------------------------------------------------------------------
+13.saveAsTextFile(path) :saving the o/p of RDD as text file into specified path
+
+hadoop@ubuntu:~$ hdfs dfs -mkdir /pysparklab1
+
+
+>>> r1.saveAsTextFile("hdfs://localhost:9000/pysparklab1/res1")
+
+hadoop@ubuntu:~$ hdfs dfs -ls /pysparklab1/res1
+Found 2 items
+-rw-r--r--   3 hadoop supergroup          0 2022-05-07 06:34 /pysparklab1/res1/_SUCCESS
+-rw-r--r--   3 hadoop supergroup         15 2022-05-07 06:34 /pysparklab1/res1/part-00000
+hadoop@ubuntu:~$ hdfs dfs -ls /pysparklab1/res1/part-00000
+-rw-r--r--   3 hadoop supergroup         15 2022-05-07 06:34 /pysparklab1/res1/part-00000
+hadoop@ubuntu:~$ hdfs dfs -cat /pysparklab1/res1/part-00000
+10
+20
+30
+40
+50
+
+>>> x=[10,20,30,40,50,60,70,80]
+>>> r1=sc.parallelize(x,2)
+>>> r1.getNumPartitions()
+2
+>>> r1.saveAsTextFile("hdfs://localhost:9000/pysparklab1/res7")
+
+hadoop@ubuntu:~$ hdfs dfs -ls /pysparklab1/res7
+Found 3 items
+-rw-r--r--   3 hadoop supergroup          0 2022-05-07 06:41 /pysparklab1/res7/_SUCCESS
+-rw-r--r--   3 hadoop supergroup         12 2022-05-07 06:41 /pysparklab1/res7/part-00000
+-rw-r--r--   3 hadoop supergroup         12 2022-05-07 06:41 /pysparklab1/res7/part-00001
+hadoop@ubuntu:~$ hdfs dfs -cat /pysparklab1/res7/part-00000
+10
+20
+30
+40
+hadoop@ubuntu:~$ hdfs dfs -cat /pysparklab1/res7/part-00001
+50
+60
+70
+80
+
+but i doesnt want 2 partitions, to make into one partition,
+
+we have coalesce(),which is a transformation function
+
+Coalesce(): It is a transformation to decrease or combine the partitions of a RDD
+            
+>>> r1.getNumPartitions()
+2
+>>> r2=r1.coalesce(1)
+>>> r2.getNumPartitions()
+1
+
+>>> #can i increase the partitions using coalesce---??
+... 
+>>> r3=r1.coalesce(3)
+>>> r3.getNumPartitions()
+2
+
+>>> #using coalesce ,we can only decrease but we cannot increase
+
+>>> r1.getNumPartitions()
+2
+>>> r2=r1.coalesce(1)
+>>> r2.getNumPartitions()
+1
+>>> r1.getNumPartitions()
+2
+
+
+-----------------------------------------------------------------------------------------------
+saving into LFS:
+
+>>> r1.saveAsTextFile("pysparklab/res1")
+
+hadoop@ubuntu:~$ mkdir pysparklab
+hadoop@ubuntu:~$ ls pysparklab
+res1
+hadoop@ubuntu:~$ ls pysparklab/res1
+part-00000  part-00001  _SUCCESS
+hadoop@ubuntu:~$ cat pysparklab/res1/part-00000
+10
+20
+30
+40
+hadoop@ubuntu:~$ cat pysparklab/res1/part-00001
+50
+60
+70
+80
+
+-------------------------------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,239 @@
+
+Reading data(table) from mysql database and creating a dataframe
+
+hadoop@ubuntu:~$ mysql -u hadoop -p
+Enter password:hadoop
+
+mysql> show databases;
++--------------------+
+| Database           |
++--------------------+
+| information_schema |
+| hive_meta          |
+| mysql              |
+| performance_schema |
+| sys                |
++--------------------+
+5 rows in set (0.00 sec)
+
+mysql> create database sparkdb1;
+
+mysql> use sparkdb1;
+Database changed
+
+mysql> show tables;
+Empty set (0.00 sec)
+
+mysql> create table emp(eid int,ename varchar(10),sal int,sex varchar(1),dno int);
+
+mysql> insert into emp values(101,'Miller',50000,'m',11),(102,'Blake',60000,'m',12),(103,'Sony',70000,'f',11),(104,'Sita',80000,'f',12),(105,'James',90000,'m',13);
+
+mysql> select * from emp;
++------+--------+-------+------+------+
+| eid  | ename  | sal   | sex  | dno  |
++------+--------+-------+------+------+
+|  101 | Miller | 50000 | m    |   11 |
+|  102 | Blake  | 60000 | m    |   12 |
+|  103 | Sony   | 70000 | f    |   11 |
+|  104 | Sita   | 80000 | f    |   12 |
+|  105 | James  | 90000 | m    |   13 |
++------+--------+-------+------+------+
+
+Now reading this emp table from mysql and creating a DF
+
+>>> df=spark.read.format("jdbc") \          #or df=sqlContext.read.format("jdbc")
+...  .option("url","jdbc:mysql://localhost/sparkdb1") \
+...  .option("driver","com.mysql.jdbc.Driver") \
+...  .option("dbtable","emp") \
+...  .option("user","hadoop") \
+...  .option("password","hadoop").load()
+
+>>>df.show()
++---+------+-----+---+---+
+|eid| ename|  sal|sex|dno|
++---+------+-----+---+---+
+|101|Miller|50000|  m| 11|
+|102| Blake|60000|  m| 12|
+|103|  Sony|70000|  f| 11|
+|104|  Sita|80000|  f| 12|
+|105| James|90000|  m| 13|
++---+------+-----+---+---+
+
+#Now register as temp table an work with any  pure sql stmts
+
+>>> df.registerTempTable("emp1")
+
+>>> q1=spark.sql("select * from emp1")      #(or) q1=sqlContext.sql("select * from emp1")
+
+>>> q1.show()
+
++---+------+-----+---+---+
+|eid| ename|  sal|sex|dno|
++---+------+-----+---+---+
+|101|Miller|50000|  m| 11|
+|102| Blake|60000|  m| 12|
+|103|  Sony|70000|  f| 11|
+|104|  Sita|80000|  f| 12|
+|105| James|90000|  m| 13|
++---+------+-----+---+---+
+
+>>> q2=sqlContext.sql("select dno,sum(sal) from emp1 group by dno").show()
++---+--------+
+|dno|sum(sal)|
++---+--------+
+| 12|  140000|
+| 13|   90000|
+| 11|  120000|
++---+--------+
+
+---------------------------------------------------------------------------------------------
+Task:  with the help of sqoop
+
+Flow----> mysql------>sqoop-------->HDFS----->pyspark------->HDFS
+
+
+hadoop@ubuntu:~$ sqoop import \
+> --connect jdbc:mysql://localhost/sparkdb1 \
+> --username hadoop \
+> --password hadoop \
+> --table emp -m 1 \
+> --target-dir /pysparklab/sqemp
+
+hadoop@ubuntu:~$ hdfs dfs -ls /pysparklab/sqemp
+Found 2 items
+-rw-r--r--   1 hadoop supergroup          0 2022-07-24 06:29 /pysparklab/sqemp/_SUCCESS
+-rw-r--r--   1 hadoop supergroup        104 2022-07-24 06:29 /pysparklab/sqemp/part-m-00000
+
+hadoop@ubuntu:~$ hdfs dfs -cat /pysparklab/sqemp/part-m-00000
+101,Miller,50000,m,11
+102,Blake,60000,m,12
+103,Sony,70000,f,11
+104,Sita,80000,f,12
+105,James,90000,m,13
+
+>>> r1=sc.textFile("hdfs://localhost:9000/pysparklab/sqemp/part-m-00000")
+>>> r1.collect()
+[u'101,miller,10000,m,11', u'102,Blake,20000,f,12', u'103,sony,30000,m,12', u'104,sita,40000,f,13']
+>>> r1.getNumPartitions()
+1
+>>> r1=sc.textFile("hdfs://localhost:9000/sparklab/emp",2)
+>>> r1.getNumPartitions()
+2
+>>> r2=r1.map(lambda x:x.split(","))
+>>> r2.collect()
+[[u'101', u'miller', u'10000', u'm', u'11'], [u'102', u'Blake', u'20000', u'f', u'12'], [u'103', u'sony', u'30000', u'm', u'12'], [u'104', u'sita', u'40000', u'f', u'13'], [u'105', u'John', u'50000', u'm', u'11']]
+>>> r3=r2.map(lambda x:Row(eid=int(x[0]),ename=x[1],sal=int(x[2]),sex=x[3],dno=int(x[4])))
+>>> df=spark.createDataFrame(r3)
+>>> df.show()
++---+---+------+-----+---+
+|dno|eid| ename|  sal|sex|
++---+---+------+-----+---+
+| 11|101|miller|10000|  m|
+| 12|102| Blake|20000|  f|
+| 12|103|  sony|30000|  m|
+| 12|104|  sita|40000|  f|
+--------------------------
+
+convert to temp table and work with any  pure sql stmts
+
+>>> df.registerTempTable("emp1")
+
+>>> q1=spark.sql("select * from emp1")      #(or) q1=sqlContext.sql("select * from emp1")
+
+>>> q1.show()
+
++---+------+-----+---+---+
+|eid| ename|  sal|sex|dno|
++---+------+-----+---+---+
+|101|Miller|50000|  m| 11|
+|102| Blake|60000|  m| 12|
+|103|  Sony|70000|  f| 11|
+|104|  Sita|80000|  f| 12|
+|105| James|90000|  m| 13|
++---+------+-----+---+---+
+
+>>> q2=sqlContext.sql("select dno,sum(sal) from emp1 group by dno").show()
++---+--------+
+|dno|sum(sal)|
++---+--------+
+| 12|  140000|
+| 13|   90000|
+| 11|  120000|
++---+--------+
+
+#or use DF APIs to group and aggregate
+
+>>> emp1.groupBy("dno").sum("sal").show()
++---+--------+
+|dno|sum(sal)|
++---+--------+
+| 12|  140000|
+| 13|   90000|
+| 11|  120000|
++---+--------+
+
+-----------------------------------------------------------------------------------------------
+Task: saving the DataFrame to mysql table (writing a DF to a mysql table)
+
+>>> df.select("eid","ename","sal","sex","dno").write.format("jdbc") \
+... .option("url","jdbc:mysql://localhost/sparkdb1") \
+... .option("driver","com.mysql.jdbc.Driver") \
+... .option("dbtable","emp3") \
+... .option("user","hadoop") \
+... .option("password","hadoop").save()
+
+mysql> select * from emp3;
++------+--------+-------+------+------+
+| eid  | ename  | sal   | sex  | dno  |
++------+--------+-------+------+------+
+|  101 | Miller | 50000 | m    |   11 |
+|  102 | Blake  | 60000 | m    |   12 |
+|  103 | Sony   | 70000 | f    |   11 |
+|  104 | Sita   | 80000 | f    |   12 |
+|  105 | James  | 90000 | m    |   13 |
++------+--------+-------+------+------+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

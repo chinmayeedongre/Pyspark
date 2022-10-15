@@ -1,0 +1,168 @@
+
+Apache Spark Stages and Tasks:
+------------------------------
+
+Spark features:
+---------------
+
+1)In-memory Computation--->data stored in memory and
+                           data processed in memory
+
+2)Distributed Execution
+
+3)Parallelprocessing
+
+4)Lazy Evolution ---->Transformations are executed only when actions are performed
+
+5)Persistence------->making the RDD available in the RAM
+                     Reducing the no of transformations, here no need of re-executing
+
+6)Resilience -----> During fault Tolerance, spark has a feature of re-generating the lost
+                    partitions of a RDD.
+
+7)Stages and Tasks
+
+-----------------------------------------------------------------------------------------------
+2 Types of Transformations:
+
+1)Narrow Transformation-------->simple----->bcoz----->here no shuffling of data
+2)Wide Transformation   ----------------------------->here shuffling of data
+
+when we submit a spark Application, 2 kinds of programs will be created
+
+1)Driver   ---->acts as a master process
+
+2)Executor ---->acts as a slave process
+
+These master and slave w.r.to spark application
+
+w.r.to cluster --->master and slave are as follows
+
+cluster     master       slave            master
+                                          port No
+
+YARN       Resource   NodeMAnager(NM)     8088
+           Manager(RM)
+
+
+Stages and Tasks belongs to Driver and Executor
+
+when a spark Application is submitted to a Yarn cluster
+
+then we require some resources for running the application in the slave nodes(Node MAnager)
+such as
+
+1)Memory
+2)Processors(cores)
+
+For executing the data of each slave nodes , we require the above resources
+These resources are allocated by Nodemanager of each node
+
+Resource Manager(RM) -----maintains the entire Cluster
+Node MAnager (NM) -------maintains the entire Node
+
+
+Data divided into partitions 
+partitions need to be processed with a Bussiness logic
+we perform operations over the partitions (or) data
+
+who supplies the logic (or) operations to be performed on the data---->Driver
+
+Driver program supplies the logic (or) operations to each partition of a slave node
+
+The  Execution of a partition by the provided logic, is carried out by a program called 
+as Executor
+
+Executor program will process the partition data based on the logic provided
+
+If 5 partitions then 5 executor programs will run
+
+
+How many drivers are Created ?
+How many Executors are Created?
+                   No of Executors = No  of Partitions
+
+All these executors runs under the control of a Driver
+
+Thats why---->Driver is the master of Spark Application
+              Executor is the slave of Spark Application
+
+
+-------------------------------------------------------------------------------------------------
+Task : It is nothing but a partition under execution--------->It is a state
+       It is a state of execution of a partition
+             No.of Tasks = No.of partiitons = No.of.Executors
+
+-----------------------------------------------------------------------------------------------
+Stages:
+-------
+-A Stage is a collection of all RDDs (or) Transformations which doesnt involve shuffling
+
+-From a RDD to RDD ,if data is flowing without shuffling then it is a stage
+
+-If Shuffling is involved then a new stage is created.
+
+
+r1=sc.textFile(.........)--->3 partitions--->p1,p2,p3
+                            on these 3 partitions--->T1 Transformation is applied on each partition
+                               
+                            Executor---means----->(partition+Transformation)
+                            3 partitions------->means-->3 Executors----->means 3 Tasks
+
+
+As long as the Transformations are Narrow ,they fall in the same satage
+
+when shuffling happenss a new stage is created
+
+Stage: Execution of Sequence of Narrow Transformations.
+       New Stage for a wide Transformation
+
+Executor : Program which process a partition with a logic
+No of Executors =No of partitions
+
+Task : A Partition under Execution
+No of Tasks =No of Executors= No of PArtitions
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
